@@ -1,8 +1,8 @@
 {
    "$schema": "https://schema.tauri.app/config/2",
-   "productName": "optisnap",
+   "productName": "Optisnap",
    "version": "0.1.0",
-   "identifier": "com.tuan-kiet.optisnap",
+   "identifier": "com.tuan-kiet.Optisnap",
    "build": {
       "beforeDevCommand": "pnpm dev",
       "devUrl": "http://localhost:1420",
