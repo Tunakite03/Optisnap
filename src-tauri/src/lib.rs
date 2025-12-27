@@ -23,6 +23,8 @@ pub enum OutputFormat {
     Png,
     #[serde(rename = "webp")]
     Webp,
+    #[serde(rename = "jpeg")]
+    Jpeg,
     #[serde(rename = "tiff")]
     Tiff,
     #[serde(rename = "qoi")]
@@ -36,6 +38,7 @@ impl OutputFormat {
         match self {
             OutputFormat::Png => "png",
             OutputFormat::Webp => "webp",
+            OutputFormat::Jpeg => "jpg",
             OutputFormat::Tiff => "tiff",
             OutputFormat::Qoi => "qoi",
             OutputFormat::Bmp => "bmp",
@@ -45,6 +48,7 @@ impl OutputFormat {
     fn to_image_format(&self) -> Option<ImageFormat> {
         match self {
             OutputFormat::Png => Some(ImageFormat::Png),
+            OutputFormat::Jpeg => Some(ImageFormat::Jpeg),
             OutputFormat::Tiff => Some(ImageFormat::Tiff),
             OutputFormat::Bmp => Some(ImageFormat::Bmp),
             OutputFormat::Qoi => Some(ImageFormat::Qoi),
@@ -56,6 +60,7 @@ impl OutputFormat {
         let ext = path.extension()?.to_str()?.to_lowercase();
         match ext.as_str() {
             "png" => Some(OutputFormat::Png),
+            "jpg" | "jpeg" => Some(OutputFormat::Jpeg),
             "webp" => Some(OutputFormat::Webp),
             "tiff" | "tif" => Some(OutputFormat::Tiff),
             "qoi" => Some(OutputFormat::Qoi),
@@ -96,6 +101,8 @@ pub struct FileResult {
     pub status: FileStatus,
     pub output_path: Option<String>,
     pub output_size: Option<u64>,
+    pub output_width: Option<u32>,
+    pub output_height: Option<u32>,
     pub error: Option<String>,
 }
 
@@ -117,7 +124,7 @@ fn convert_image(
     max_width: Option<u32>,
     max_height: Option<u32>,
     keep_aspect_ratio: bool,
-) -> Result<(PathBuf, u64), String> {
+) -> Result<(PathBuf, u64, u32, u32), String> {
     // Load the image
     let mut img = image::open(input_path)
         .map_err(|e| format!("Failed to open image: {}", e))?;
@@ -205,6 +212,16 @@ fn convert_image(
                     .map_err(|e| format!("Failed to save PNG: {}", e))?;
             }
         }
+        OutputFormat::Jpeg => {
+            if should_optimize {
+                // Use JPEG with quality control
+                let quality_val = quality.unwrap_or(85.0).clamp(0.0, 100.0) as u8;
+                save_jpeg_with_quality(&img, &output_path, quality_val)?;
+            } else {
+                // Use standard JPEG encoder with high quality
+                save_jpeg_with_quality(&img, &output_path, 95)?;
+            }
+        }
         OutputFormat::Qoi => {
             // QOI format
             save_qoi(&img, &output_path)?;
@@ -218,12 +235,14 @@ fn convert_image(
         }
     }
 
-    // Get output file size
+    // Get output file size and dimensions
     let output_size = fs::metadata(&output_path)
         .map(|m| m.len())
         .unwrap_or(0);
+    
+    let (output_width, output_height) = img.dimensions();
 
-    Ok((output_path, output_size))
+    Ok((output_path, output_size, output_width, output_height))
 }
 
 fn save_webp_lossy(img: &DynamicImage, output_path: &Path, quality: f32) -> Result<(), String> {
@@ -370,6 +389,24 @@ fn save_qoi(img: &DynamicImage, output_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn save_jpeg_with_quality(img: &DynamicImage, output_path: &Path, quality: u8) -> Result<(), String> {
+    use std::io::BufWriter;
+    use image::codecs::jpeg::JpegEncoder;
+    
+    let rgb = img.to_rgb8();
+    let (width, height) = rgb.dimensions();
+    
+    let file = fs::File::create(output_path)
+        .map_err(|e| format!("Failed to create JPEG file: {}", e))?;
+    let mut writer = BufWriter::new(file);
+    
+    let mut encoder = JpegEncoder::new_with_quality(&mut writer, quality);
+    encoder.encode(rgb.as_raw(), width, height, image::ExtendedColorType::Rgb8)
+        .map_err(|e| format!("Failed to encode JPEG: {}", e))?;
+    
+    Ok(())
+}
+
 #[tauri::command]
 fn optimize_batch(request: OptimizeBatchRequest) -> BatchResult {
     let mut results = Vec::new();
@@ -397,12 +434,14 @@ fn optimize_batch(request: OptimizeBatchRequest) -> BatchResult {
             request.max_height,
             request.keep_aspect_ratio.unwrap_or(true),
         ) {
-            Ok((output_path, output_size)) => {
+            Ok((output_path, output_size, output_width, output_height)) => {
                 results.push(FileResult {
                     path: path_str.clone(),
                     status: FileStatus::Success,
                     output_path: Some(output_path.to_string_lossy().to_string()),
                     output_size: Some(output_size),
+                    output_width: Some(output_width),
+                    output_height: Some(output_height),
                     error: None,
                 });
                 success_count += 1;
@@ -413,6 +452,8 @@ fn optimize_batch(request: OptimizeBatchRequest) -> BatchResult {
                     status: FileStatus::Failed,
                     output_path: None,
                     output_size: None,
+                    output_width: None,
+                    output_height: None,
                     error: Some(e),
                 });
                 failed_count += 1;

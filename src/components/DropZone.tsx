@@ -1,9 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Upload, X, FileImage, AlertCircle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
-import { TrackedFile, SUPPORTED_EXTENSIONS, FileStatus } from '@/types';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { TrackedFile, SUPPORTED_EXTENSIONS, FileStatus, OperationMode } from '@/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +13,7 @@ interface DropZoneProps {
    onFilesAdded: (files: TrackedFile[]) => void;
    onFileRemove: (id: string) => void;
    onClearAll: () => void;
+   operationMode: OperationMode;
    disabled?: boolean;
 }
 
@@ -65,25 +67,20 @@ function getStatusText(status: FileStatus, originalSize?: number, outputSize?: n
    }
 }
 
-export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, disabled = false }: DropZoneProps) {
+export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, operationMode, disabled = false }: DropZoneProps) {
    const [isDragging, setIsDragging] = useState(false);
 
-   const handleDrop = useCallback(
-      async (e: React.DragEvent<HTMLDivElement>) => {
-         e.preventDefault();
-         e.stopPropagation();
-         setIsDragging(false);
-
+   // Process file paths and add to tracked files
+   const processFilePaths = useCallback(
+      async (paths: string[]) => {
          if (disabled) return;
 
-         const droppedFiles = Array.from(e.dataTransfer.files);
          const trackedFiles: TrackedFile[] = [];
 
-         for (const file of droppedFiles) {
-            if (isValidImageFile(file.name)) {
-               // In Tauri desktop, file.path should be available
-               const path = (file as any).path || file.name;
+         for (const path of paths) {
+            const name = path.split(/[\\/]/).pop() || path;
 
+            if (isValidImageFile(name)) {
                try {
                   const fileInfo = await stat(path);
                   let dimensions = undefined;
@@ -95,22 +92,15 @@ export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, disabl
 
                   trackedFiles.push({
                      id: generateId(),
-                     name: file.name,
-                     path: path,
+                     name,
+                     path,
                      size: fileInfo.size,
                      width: dimensions?.width,
                      height: dimensions?.height,
                      status: 'pending' as FileStatus,
                   });
                } catch (e) {
-                  // Fallback if stat fails
-                  trackedFiles.push({
-                     id: generateId(),
-                     name: file.name,
-                     path: path,
-                     size: file.size,
-                     status: 'pending' as FileStatus,
-                  });
+                  console.error('Failed to stat file:', path, e);
                }
             }
          }
@@ -121,6 +111,33 @@ export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, disabl
       },
       [disabled, onFilesAdded]
    );
+
+   // Use Tauri's drag-drop event listener
+   useEffect(() => {
+      const webview = getCurrentWebviewWindow();
+      const unlisten = webview.onDragDropEvent((event) => {
+         if (event.payload.type === 'over') {
+            setIsDragging(true);
+         } else if (event.payload.type === 'drop') {
+            setIsDragging(false);
+            if (event.payload.paths && event.payload.paths.length > 0) {
+               processFilePaths(event.payload.paths);
+            }
+         } else if (event.payload.type === 'leave') {
+            setIsDragging(false);
+         }
+      });
+
+      return () => {
+         unlisten.then((f) => f());
+      };
+   }, [processFilePaths]);
+
+   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Tauri handles this via onDragDropEvent
+   }, []);
 
    const handleDragOver = useCallback(
       (e: React.DragEvent<HTMLDivElement>) => {
@@ -155,40 +172,11 @@ export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, disabl
       if (!selected) return;
 
       const paths = Array.isArray(selected) ? selected : [selected];
-      const trackedFiles: TrackedFile[] = [];
-
-      for (const path of paths) {
-         try {
-            const fileInfo = await stat(path);
-            const name = path.split(/[\\/]/).pop() || path;
-
-            let dimensions = undefined;
-            try {
-               dimensions = await invoke<{ width: number; height: number }>('get_image_dimensions', { path });
-            } catch (e) {
-               console.error('Failed to get dimensions:', e);
-            }
-
-            trackedFiles.push({
-               id: generateId(),
-               name,
-               path,
-               size: fileInfo.size,
-               width: dimensions?.width,
-               height: dimensions?.height,
-               status: 'pending' as FileStatus,
-            });
-         } catch (e) {
-            console.error('Failed to stat file:', path, e);
-         }
-      }
-
-      if (trackedFiles.length > 0) {
-         onFilesAdded(trackedFiles);
-      }
-   }, [disabled, onFilesAdded]);
+      await processFilePaths(paths);
+   }, [disabled, processFilePaths]);
 
    const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+   const showDimensions = operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all';
 
    return (
       <div className='h-full flex flex-col'>
@@ -233,6 +221,9 @@ export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, disabl
                <div className='h-8 mx-3 mt-2 flex items-center px-2 bg-muted/50 rounded-t border border-b-0 border-border'>
                   <span className='w-6 shrink-0'></span>
                   <span className='flex-1 min-w-0 px-2 text-xs text-muted-foreground'>Name</span>
+                  {showDimensions && (
+                     <span className='w-24 text-xs text-muted-foreground shrink-0 text-center'>Dimensions</span>
+                  )}
                   <span className='w-20  text-xs text-muted-foreground shrink-0 text-center'>Size</span>
                   <span className='w-20  text-xs text-muted-foreground shrink-0 text-center'>Status</span>
                   <div className='w-16 flex items-center justify-center shrink-0'>
@@ -272,6 +263,20 @@ export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, disabl
                               </div>
                            )}
                         </div>
+                        {showDimensions && (
+                           <div className='w-24 text-muted-foreground shrink-0 text-center text-[11px]'>
+                              {file.status === 'success' && file.outputWidth && file.outputHeight ? (
+                                 <div className='flex flex-col'>
+                                    <span className='text-muted-foreground/60 line-through text-[10px]'>{file.width} × {file.height}</span>
+                                    <span className='text-emerald-600 font-medium'>{file.outputWidth} × {file.outputHeight}</span>
+                                 </div>
+                              ) : file.width && file.height ? (
+                                 <span>{file.width} × {file.height}</span>
+                              ) : (
+                                 <span className='text-muted-foreground/50'>—</span>
+                              )}
+                           </div>
+                        )}
                         <div className='w-20  text-muted-foreground shrink-0 text-center'>
                            {formatFileSize(file.size)}
                         </div>

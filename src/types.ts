@@ -1,5 +1,5 @@
 // Output formats supported by the optimizer
-export type OutputFormat = 'png' | 'webp' | 'tiff' | 'qoi' | 'bmp';
+export type OutputFormat = 'png' | 'webp' | 'jpeg' | 'tiff' | 'qoi' | 'bmp';
 
 // Operation modes
 export type OperationMode = 'optimize' | 'resize' | 'convert' | 'optimize_resize' | 'all';
@@ -26,6 +26,8 @@ export interface FileResult {
    status: FileStatus;
    output_path: string | null;
    output_size: number | null;
+   output_width: number | null;
+   output_height: number | null;
    error: string | null;
 }
 
@@ -49,6 +51,8 @@ export interface TrackedFile {
    error?: string;
    outputPath?: string;
    outputSize?: number;
+   outputWidth?: number;
+   outputHeight?: number;
 }
 
 // Supported image extensions for filtering
@@ -68,6 +72,7 @@ export const SUPPORTED_EXTENSIONS = [
 export const FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
    { value: 'png', label: 'PNG (Lossy - PngQuant)' },
    { value: 'webp', label: 'WebP (Lossy)' },
+   { value: 'jpeg', label: 'JPEG / JPG' },
    { value: 'tiff', label: 'TIFF' },
    { value: 'qoi', label: 'QOI (Quite OK Image)' },
    { value: 'bmp', label: 'BMP' },

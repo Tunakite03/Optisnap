@@ -2066,25 +2066,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "image-optimizer"
-version = "0.1.0"
-dependencies = [
- "image",
- "imagequant",
- "oxipng",
- "png 0.17.16",
- "qoi",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
- "webp",
-]
-
-[[package]]
 name = "image-webp"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2979,6 +2960,25 @@ name = "option-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+
+[[package]]
+name = "optisnap"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "imagequant",
+ "oxipng",
+ "png 0.17.16",
+ "qoi",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+ "webp",
+]
 
 [[package]]
 name = "ordered-stream"

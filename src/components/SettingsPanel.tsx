@@ -27,14 +27,6 @@ interface SettingsPanelProps {
    disabled?: boolean;
 }
 
-const FORMAT_ICONS: Record<OutputFormat, string> = {
-   png: '🖼️',
-   webp: '🌐',
-   tiff: '📷',
-   qoi: '⚡',
-   bmp: '🎨',
-};
-
 export function SettingsPanel({
    operationMode,
    onOperationModeChange,
@@ -119,8 +111,7 @@ export function SettingsPanel({
                            value={opt.value}
                            className='text-xs cursor-pointer'
                         >
-                           <span className='flex items-center gap-2'>
-                              <span>{FORMAT_ICONS[opt.value]}</span>
+                           <span className='flex items-center gap-2 font-semibold'>
                               <span>{opt.label}</span>
                            </span>
                         </SelectItem>
@@ -139,8 +130,14 @@ export function SettingsPanel({
                   type='text'
                   value={outputDir}
                   onChange={(e) => onOutputDirChange(e.target.value)}
-                  placeholder={overwrite ? 'Original folder (auto)' : 'Select folder...'}
-                  disabled={disabled || overwrite}
+                  placeholder={
+                     operationMode === 'convert'
+                        ? 'Select output folder...'
+                        : overwrite
+                        ? 'Original folder (auto)'
+                        : 'Select folder...'
+                  }
+                  disabled={disabled || (operationMode !== 'convert' && overwrite)}
                   className={cn(
                      'flex-1 h-8 px-2 text-xs rounded border bg-background',
                      'focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary',
@@ -152,13 +149,13 @@ export function SettingsPanel({
                   variant='outline'
                   size='sm'
                   onClick={handleSelectFolder}
-                  disabled={disabled || overwrite}
+                  disabled={disabled || (operationMode !== 'convert' && overwrite)}
                   className='h-8 px-2 shrink-0'
                >
                   <FolderOpen className='w-3.5 h-3.5' />
                </Button>
             </div>
-            {outputDir && !overwrite && (
+            {outputDir && (operationMode === 'convert' || !overwrite) && (
                <p
                   className='text-[10px] text-muted-foreground truncate'
                   title={outputDir}
@@ -166,36 +163,38 @@ export function SettingsPanel({
                   {outputDir}
                </p>
             )}
-            {overwrite && (
+            {overwrite && operationMode !== 'convert' && (
                <p className='text-[10px] text-muted-foreground'>Files will be overwritten in their original folders</p>
             )}
          </div>
 
-         {/* Overwrite Option */}
-         <div className='space-y-1'>
-            <div className='flex items-center gap-2'>
-               <Checkbox
-                  id='overwrite'
-                  checked={overwrite}
-                  onCheckedChange={(checked) => onOverwriteChange(checked === true)}
-                  disabled={disabled}
-                  className='w-4 h-4 data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-               />
-               <label
-                  htmlFor='overwrite'
-                  className='text-xs cursor-pointer'
-               >
-                  Overwrite original files
-               </label>
+         {/* Overwrite Option - Hidden in Convert mode */}
+         {operationMode !== 'convert' && (
+            <div className='space-y-1'>
+               <div className='flex items-center gap-2'>
+                  <Checkbox
+                     id='overwrite'
+                     checked={overwrite}
+                     onCheckedChange={(checked) => onOverwriteChange(checked === true)}
+                     disabled={disabled}
+                     className='w-4 h-4 data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+                  />
+                  <label
+                     htmlFor='overwrite'
+                     className='text-xs cursor-pointer'
+                  >
+                     Overwrite original files
+                  </label>
+               </div>
+               <p className='text-[10px] text-muted-foreground pl-6'>
+                  {overwrite ? 'Replace files in their original location' : 'Save to a different folder with suffix'}
+               </p>
             </div>
-            <p className='text-[10px] text-muted-foreground pl-6'>
-               {overwrite ? 'Replace files in their original location' : 'Save to a different folder with suffix'}
-            </p>
-         </div>
+         )}
 
          {/* Quality Control for WebP and PNG */}
          {(operationMode === 'optimize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
-            (outputFormat === 'webp' || outputFormat === 'png') && (
+            (outputFormat === 'webp' || outputFormat === 'png' || outputFormat === 'jpeg') && (
                <div className='space-y-1.5'>
                   <label className='text-xs font-medium text-foreground'>
                      Quality: {quality}% {outputFormat === 'png' && '(PngQuant)'}
@@ -212,6 +211,8 @@ export function SettingsPanel({
                   <p className='text-[10px] text-muted-foreground'>
                      {outputFormat === 'png'
                         ? 'Higher quality = more colors (recommended: 85-95)'
+                        : outputFormat === 'jpeg'
+                        ? 'Higher quality = less compression (recommended: 80-90)'
                         : 'Lower quality = smaller file size'}
                   </p>
                </div>
@@ -221,11 +222,18 @@ export function SettingsPanel({
          {(operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') && (
             <div className='space-y-1.5'>
                <div className='flex items-center justify-between'>
-                  <label className='text-xs font-medium text-foreground'>Resize Dimensions</label>
-                  {maxOriginalWidth > 0 && maxOriginalHeight > 0 && (
-                     <span className='text-[10px] text-muted-foreground'>
-                        Original: {maxOriginalWidth} × {maxOriginalHeight}
-                     </span>
+                  <label className='text-xs font-medium text-foreground'>Target Dimensions</label>
+                  {filesWithDims.length > 0 && (
+                     <button
+                        onClick={() => {
+                           onMaxWidthChange(maxOriginalWidth);
+                           onMaxHeightChange(maxOriginalHeight);
+                        }}
+                        disabled={disabled}
+                        className='text-[10px] text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed underline'
+                     >
+                        Use max: {maxOriginalWidth} × {maxOriginalHeight}
+                     </button>
                   )}
                </div>
                <div className='flex gap-2'>
@@ -260,31 +268,30 @@ export function SettingsPanel({
                      />
                   </div>
                </div>
-               <div className='flex items-center gap-2 pt-1'>
-                  <Checkbox
-                     id='aspectRatio'
-                     checked={keepAspectRatio}
-                     onCheckedChange={(checked) => onKeepAspectRatioChange(checked === true)}
-                     disabled={disabled}
-                     className='w-3.5 h-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-                  />
-                  <label
-                     htmlFor='aspectRatio'
-                     className='text-[10px] text-muted-foreground cursor-pointer'
-                  >
-                     Keep aspect ratio
-                  </label>
+               <div className='space-y-1 pt-1'>
+                  <div className='flex items-center gap-2'>
+                     <Checkbox
+                        id='aspectRatio'
+                        checked={keepAspectRatio}
+                        onCheckedChange={(checked) => onKeepAspectRatioChange(checked === true)}
+                        disabled={disabled}
+                        className='w-3.5 h-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+                     />
+                     <label
+                        htmlFor='aspectRatio'
+                        className='text-[10px] text-muted-foreground cursor-pointer'
+                     >
+                        Keep aspect ratio
+                     </label>
+                  </div>
+                  <p className='text-[10px] font-semibold leading-relaxed text-red-700'>
+                     {filesWithDims.length > 1
+                        ? 'Images larger than target will be resized down. Smaller images keep original size. !!!'
+                        : 'Maximum dimensions. Image will be resized if larger.'}
+                  </p>
                </div>
             </div>
          )}
-
-         {/* Info Badge */}
-         <div className='flex items-center gap-2 p-2 rounded bg-blue-500/10 border border-blue-500/20'>
-            <Shield className='w-3.5 h-3.5 text-blue-600' />
-            <span className='text-xs font-medium text-blue-700'>
-               {OPERATION_MODE_OPTIONS.find((opt) => opt.value === operationMode)?.description}
-            </span>
-         </div>
       </div>
    );
 }

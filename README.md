@@ -29,7 +29,7 @@ A desktop application built with Tauri v2 for bulk image processing. Drag and dr
 
    ```bash
    git clone <repository-url>
-   cd image-optimizer
+   cd optisnap
    ```
 
 2. Install dependencies:

@@ -6,6 +6,8 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { ProgressPanel } from '@/components/ProgressPanel';
 import { TrackedFile, OutputFormat, OperationMode, BatchResult } from '@/types';
 import './App.css';
+import { config } from './config';
+import { GithubIcon } from 'lucide-react';
 
 function App() {
    // File state
@@ -21,6 +23,36 @@ function App() {
    const [maxHeight, setMaxHeight] = useState(0); // 0 means no resize
    const [keepAspectRatio, setKeepAspectRatio] = useState(true);
 
+   // Handle width change with aspect ratio
+   const handleMaxWidthChange = (width: number) => {
+      setMaxWidth(width);
+      if (keepAspectRatio && width > 0 && maxHeight > 0) {
+         // Find the original aspect ratio from files
+         const filesWithDims = files.filter((f) => f.width && f.height);
+         if (filesWithDims.length > 0) {
+            const maxOriginalWidth = Math.max(...filesWithDims.map((f) => f.width!));
+            const maxOriginalHeight = Math.max(...filesWithDims.map((f) => f.height!));
+            const aspectRatio = maxOriginalWidth / maxOriginalHeight;
+            setMaxHeight(Math.round(width / aspectRatio));
+         }
+      }
+   };
+
+   // Handle height change with aspect ratio
+   const handleMaxHeightChange = (height: number) => {
+      setMaxHeight(height);
+      if (keepAspectRatio && height > 0 && maxWidth > 0) {
+         // Find the original aspect ratio from files
+         const filesWithDims = files.filter((f) => f.width && f.height);
+         if (filesWithDims.length > 0) {
+            const maxOriginalWidth = Math.max(...filesWithDims.map((f) => f.width!));
+            const maxOriginalHeight = Math.max(...filesWithDims.map((f) => f.height!));
+            const aspectRatio = maxOriginalWidth / maxOriginalHeight;
+            setMaxWidth(Math.round(height * aspectRatio));
+         }
+      }
+   };
+
    // Adjust quality when format changes
    const handleFormatChange = (format: OutputFormat) => {
       setOutputFormat(format);
@@ -29,6 +61,8 @@ function App() {
          setQuality(90); // PNG quality 90 for pngquant
       } else if (format === 'webp') {
          setQuality(75); // WebP quality 75
+      } else if (format === 'jpeg') {
+         setQuality(85); // JPEG quality 85
       }
    };
 
@@ -110,7 +144,7 @@ function App() {
                operation_mode: operationMode,
                quality:
                   (operationMode === 'optimize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
-                  (outputFormat === 'webp' || outputFormat === 'png')
+                  (outputFormat === 'webp' || outputFormat === 'png' || outputFormat === 'jpeg')
                      ? quality
                      : undefined,
                max_width:
@@ -138,6 +172,8 @@ function App() {
                      error: fileResult.error ?? undefined,
                      outputPath: fileResult.output_path ?? undefined,
                      outputSize: fileResult.output_size ?? undefined,
+                     outputWidth: fileResult.output_width ?? undefined,
+                     outputHeight: fileResult.output_height ?? undefined,
                   };
                }
                return f;
@@ -200,6 +236,7 @@ function App() {
                      onFilesAdded={handleFilesAdded}
                      onFileRemove={handleFileRemove}
                      onClearAll={handleClearAll}
+                     operationMode={operationMode}
                      disabled={isProcessing}
                   />
                </div>
@@ -228,9 +265,9 @@ function App() {
                      quality={quality}
                      onQualityChange={setQuality}
                      maxWidth={maxWidth}
-                     onMaxWidthChange={setMaxWidth}
+                     onMaxWidthChange={handleMaxWidthChange}
                      maxHeight={maxHeight}
-                     onMaxHeightChange={setMaxHeight}
+                     onMaxHeightChange={handleMaxHeightChange}
                      keepAspectRatio={keepAspectRatio}
                      onKeepAspectRatioChange={setKeepAspectRatio}
                      files={files}
@@ -257,8 +294,10 @@ function App() {
 
          {/* Status Bar */}
          <div className='h-6 px-3 flex items-center justify-between border-t border-border bg-muted/50 text-xs text-muted-foreground shrink-0'>
-            <span>Ready</span>
-            <span>Tauri v2 • Optimized Compression</span>
+            <span>Version: {config.version}</span>
+            <span className='flex items-center font-semibold gradient-text'>
+               {config.appName} by {config.author}
+            </span>
          </div>
       </div>
    );

@@ -1,5 +1,5 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Minus, Square, X, ImageIcon } from 'lucide-react';
+import { Minus, Square, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function TitleBar() {
@@ -32,14 +32,18 @@ export function TitleBar() {
             data-tauri-drag-region
             className='flex items-center gap-2 px-3 h-full'
          >
-            <div className='w-4 h-4 rounded bg-primary/90 flex items-center justify-center'>
-               <ImageIcon className='w-2.5 h-2.5 text-white' />
+            <div className='w-4 h-4 flex items-center justify-center'>
+               <img
+                  src='/logo.png'
+                  alt='App Logo'
+                  className='w-4 h-4 object-cover'
+               />
             </div>
             <span
                data-tauri-drag-region
                className='text-xs font-medium text-foreground/80'
             >
-               Bulk Image Optimizer
+               Image Optimizer
             </span>
          </div>
 
