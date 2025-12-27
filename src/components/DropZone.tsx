@@ -67,7 +67,14 @@ function getStatusText(status: FileStatus, originalSize?: number, outputSize?: n
    }
 }
 
-export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, operationMode, disabled = false }: DropZoneProps) {
+export function DropZone({
+   files,
+   onFilesAdded,
+   onFileRemove,
+   onClearAll,
+   operationMode,
+   disabled = false,
+}: DropZoneProps) {
    const [isDragging, setIsDragging] = useState(false);
 
    // Process file paths and add to tracked files
@@ -267,11 +274,17 @@ export function DropZone({ files, onFilesAdded, onFileRemove, onClearAll, operat
                            <div className='w-24 text-muted-foreground shrink-0 text-center text-[11px]'>
                               {file.status === 'success' && file.outputWidth && file.outputHeight ? (
                                  <div className='flex flex-col'>
-                                    <span className='text-muted-foreground/60 line-through text-[10px]'>{file.width} × {file.height}</span>
-                                    <span className='text-emerald-600 font-medium'>{file.outputWidth} × {file.outputHeight}</span>
+                                    <span className='text-muted-foreground/60 line-through text-[10px]'>
+                                       {file.width} × {file.height}
+                                    </span>
+                                    <span className='text-emerald-600 font-medium'>
+                                       {file.outputWidth} × {file.outputHeight}
+                                    </span>
                                  </div>
                               ) : file.width && file.height ? (
-                                 <span>{file.width} × {file.height}</span>
+                                 <span>
+                                    {file.width} × {file.height}
+                                 </span>
                               ) : (
                                  <span className='text-muted-foreground/50'>—</span>
                               )}
