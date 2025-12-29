@@ -1,6 +1,6 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { FolderOpen } from 'lucide-react';
-import { OutputFormat, FORMAT_OPTIONS, OperationMode, OPERATION_MODE_OPTIONS } from '@/types';
+import { OutputFormat, FORMAT_OPTIONS, OperationMode, OPERATION_MODE_OPTIONS, ResizeMode } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,10 @@ interface SettingsPanelProps {
    onOverwriteChange: (overwrite: boolean) => void;
    quality: number;
    onQualityChange: (quality: number) => void;
+   resizeMode: ResizeMode;
+   onResizeModeChange: (mode: ResizeMode) => void;
+   resizePercentage: number;
+   onResizePercentageChange: (percentage: number) => void;
    maxWidth: number;
    onMaxWidthChange: (width: number) => void;
    maxHeight: number;
@@ -38,6 +42,10 @@ export function SettingsPanel({
    onOverwriteChange,
    quality,
    onQualityChange,
+   resizeMode,
+   onResizeModeChange,
+   resizePercentage,
+   onResizePercentageChange,
    maxWidth,
    onMaxWidthChange,
    maxHeight,
@@ -220,76 +228,186 @@ export function SettingsPanel({
 
          {/* Resize Options */}
          {(operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') && (
-            <div className='space-y-1.5'>
-               <div className='flex items-center justify-between'>
-                  <label className='text-xs font-medium text-foreground'>Target Dimensions</label>
-                  {filesWithDims.length > 0 && (
-                     <button
-                        onClick={() => {
-                           onMaxWidthChange(maxOriginalWidth);
-                           onMaxHeightChange(maxOriginalHeight);
-                        }}
-                        disabled={disabled}
-                        className='text-[10px] text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed underline'
-                     >
-                        Use max: {maxOriginalWidth} × {maxOriginalHeight}
-                     </button>
-                  )}
+            <div className='space-y-3'>
+               {/* Resize Mode Selection */}
+               <div className='space-y-1.5'>
+                  <label className='text-xs font-medium text-foreground'>Resize Mode</label>
+                  <Select
+                     value={resizeMode}
+                     onValueChange={(v) => onResizeModeChange(v as ResizeMode)}
+                     disabled={disabled}
+                  >
+                     <SelectTrigger className='w-full h-8 text-xs bg-background border hover:border-primary/50'>
+                        <SelectValue placeholder='Select resize mode' />
+                     </SelectTrigger>
+                     <SelectContent>
+                        <SelectItem value='percentage' className='text-xs cursor-pointer'>
+                           <div className='flex flex-col'>
+                              <span className='font-semibold'>By Percentage</span>
+                              <span className='text-[10px] text-muted-foreground'>Resize to % of original size</span>
+                           </div>
+                        </SelectItem>
+                        <SelectItem value='dimensions' className='text-xs cursor-pointer'>
+                           <div className='flex flex-col'>
+                              <span className='font-semibold'>Custom Dimensions</span>
+                              <span className='text-[10px] text-muted-foreground'>Set specific width/height</span>
+                           </div>
+                        </SelectItem>
+                     </SelectContent>
+                  </Select>
                </div>
-               <div className='flex gap-2'>
-                  <div className='flex-1'>
+
+               {/* Percentage Mode */}
+               {resizeMode === 'percentage' && (
+                  <div className='space-y-1.5'>
+                     <div className='flex items-center justify-between'>
+                        <label className='text-xs font-medium text-foreground'>
+                           Resize to: {resizePercentage}%
+                        </label>
+                        <div className='flex gap-1'>
+                           <button
+                              onClick={() => onResizePercentageChange(75)}
+                              disabled={disabled}
+                              className={cn(
+                                 'px-2 py-0.5 text-[10px] rounded border transition-colors',
+                                 resizePercentage === 75
+                                    ? 'bg-primary text-primary-foreground border-primary'
+                                    : 'bg-background hover:bg-accent hover:text-accent-foreground',
+                                 'disabled:opacity-50 disabled:cursor-not-allowed'
+                              )}
+                           >
+                              75%
+                           </button>
+                           <button
+                              onClick={() => onResizePercentageChange(50)}
+                              disabled={disabled}
+                              className={cn(
+                                 'px-2 py-0.5 text-[10px] rounded border transition-colors',
+                                 resizePercentage === 50
+                                    ? 'bg-primary text-primary-foreground border-primary'
+                                    : 'bg-background hover:bg-accent hover:text-accent-foreground',
+                                 'disabled:opacity-50 disabled:cursor-not-allowed'
+                              )}
+                           >
+                              50%
+                           </button>
+                           <button
+                              onClick={() => onResizePercentageChange(25)}
+                              disabled={disabled}
+                              className={cn(
+                                 'px-2 py-0.5 text-[10px] rounded border transition-colors',
+                                 resizePercentage === 25
+                                    ? 'bg-primary text-primary-foreground border-primary'
+                                    : 'bg-background hover:bg-accent hover:text-accent-foreground',
+                                 'disabled:opacity-50 disabled:cursor-not-allowed'
+                              )}
+                           >
+                              25%
+                           </button>
+                        </div>
+                     </div>
+                     <input
+                        type='range'
+                        min='1'
+                        max='100'
+                        value={resizePercentage}
+                        onChange={(e) => onResizePercentageChange(Number(e.target.value))}
+                        disabled={disabled}
+                        className='w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary'
+                     />
                      <input
                         type='number'
-                        value={maxWidth || ''}
-                        onChange={(e) => onMaxWidthChange(Number(e.target.value) || 0)}
-                        placeholder='Max width'
+                        min='1'
+                        max='100'
+                        value={resizePercentage}
+                        onChange={(e) => onResizePercentageChange(Number(e.target.value) || 1)}
                         disabled={disabled}
                         className={cn(
                            'w-full h-8 px-2 text-xs rounded border bg-background',
                            'focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary',
-                           'disabled:opacity-50 disabled:cursor-not-allowed',
-                           'placeholder:text-muted-foreground/60'
+                           'disabled:opacity-50 disabled:cursor-not-allowed'
                         )}
                      />
+                     <p className='text-[10px] text-muted-foreground'>
+                        Images will be resized to {resizePercentage}% of their original dimensions
+                     </p>
                   </div>
-                  <div className='flex-1'>
-                     <input
-                        type='number'
-                        value={maxHeight || ''}
-                        onChange={(e) => onMaxHeightChange(Number(e.target.value) || 0)}
-                        placeholder='Max height'
-                        disabled={disabled}
-                        className={cn(
-                           'w-full h-8 px-2 text-xs rounded border bg-background',
-                           'focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary',
-                           'disabled:opacity-50 disabled:cursor-not-allowed',
-                           'placeholder:text-muted-foreground/60'
+               )}
+
+               {/* Custom Dimensions Mode */}
+               {resizeMode === 'dimensions' && (
+                  <div className='space-y-1.5'>
+                     <div className='flex items-center justify-between'>
+                        <label className='text-xs font-medium text-foreground'>Target Dimensions</label>
+                        {filesWithDims.length > 0 && (
+                           <button
+                              onClick={() => {
+                                 onMaxWidthChange(maxOriginalWidth);
+                                 onMaxHeightChange(maxOriginalHeight);
+                              }}
+                              disabled={disabled}
+                              className='text-[10px] text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed underline'
+                           >
+                              Use max: {maxOriginalWidth} × {maxOriginalHeight}
+                           </button>
                         )}
-                     />
+                     </div>
+                     <div className='flex gap-2'>
+                        <div className='flex-1'>
+                           <input
+                              type='number'
+                              value={maxWidth || ''}
+                              onChange={(e) => onMaxWidthChange(Number(e.target.value) || 0)}
+                              placeholder='Max width'
+                              disabled={disabled}
+                              className={cn(
+                                 'w-full h-8 px-2 text-xs rounded border bg-background',
+                                 'focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary',
+                                 'disabled:opacity-50 disabled:cursor-not-allowed',
+                                 'placeholder:text-muted-foreground/60'
+                              )}
+                           />
+                        </div>
+                        <div className='flex-1'>
+                           <input
+                              type='number'
+                              value={maxHeight || ''}
+                              onChange={(e) => onMaxHeightChange(Number(e.target.value) || 0)}
+                              placeholder='Max height'
+                              disabled={disabled}
+                              className={cn(
+                                 'w-full h-8 px-2 text-xs rounded border bg-background',
+                                 'focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary',
+                                 'disabled:opacity-50 disabled:cursor-not-allowed',
+                                 'placeholder:text-muted-foreground/60'
+                              )}
+                           />
+                        </div>
+                     </div>
+                     <div className='space-y-1 pt-1'>
+                        <div className='flex items-center gap-2'>
+                           <Checkbox
+                              id='aspectRatio'
+                              checked={keepAspectRatio}
+                              onCheckedChange={(checked) => onKeepAspectRatioChange(checked === true)}
+                              disabled={disabled}
+                              className='w-3.5 h-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary'
+                           />
+                           <label
+                              htmlFor='aspectRatio'
+                              className='text-[10px] text-muted-foreground cursor-pointer'
+                           >
+                              Keep aspect ratio
+                           </label>
+                        </div>
+                        <p className='text-[10px] font-semibold leading-relaxed text-red-700'>
+                           {filesWithDims.length > 1
+                              ? 'Images larger than target will be resized down. Smaller images keep original size. !!!'
+                              : 'Maximum dimensions. Image will be resized if larger.'}
+                        </p>
+                     </div>
                   </div>
-               </div>
-               <div className='space-y-1 pt-1'>
-                  <div className='flex items-center gap-2'>
-                     <Checkbox
-                        id='aspectRatio'
-                        checked={keepAspectRatio}
-                        onCheckedChange={(checked) => onKeepAspectRatioChange(checked === true)}
-                        disabled={disabled}
-                        className='w-3.5 h-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary'
-                     />
-                     <label
-                        htmlFor='aspectRatio'
-                        className='text-[10px] text-muted-foreground cursor-pointer'
-                     >
-                        Keep aspect ratio
-                     </label>
-                  </div>
-                  <p className='text-[10px] font-semibold leading-relaxed text-red-700'>
-                     {filesWithDims.length > 1
-                        ? 'Images larger than target will be resized down. Smaller images keep original size. !!!'
-                        : 'Maximum dimensions. Image will be resized if larger.'}
-                  </p>
-               </div>
+               )}
             </div>
          )}
       </div>

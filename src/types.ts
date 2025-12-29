@@ -4,6 +4,9 @@ export type OutputFormat = 'png' | 'webp' | 'jpeg' | 'tiff' | 'qoi' | 'bmp';
 // Operation modes
 export type OperationMode = 'optimize' | 'resize' | 'convert' | 'optimize_resize' | 'all';
 
+// Resize modes
+export type ResizeMode = 'dimensions' | 'percentage';
+
 // File processing status
 export type FileStatus = 'pending' | 'processing' | 'success' | 'failed';
 
@@ -15,8 +18,10 @@ export interface OptimizeBatchRequest {
    overwrite: boolean;
    operation_mode: OperationMode;
    quality?: number; // 0-100, default 75 for WebP, 90 for PNG
-   max_width?: number; // Optional resize width
-   max_height?: number; // Optional resize height
+   resize_mode?: ResizeMode; // 'dimensions' or 'percentage'
+   resize_percentage?: number; // 1-100, resize by percentage
+   max_width?: number; // Optional resize width (when resize_mode = 'dimensions')
+   max_height?: number; // Optional resize height (when resize_mode = 'dimensions')
    keep_aspect_ratio?: boolean; // Default true
 }
 
@@ -37,6 +42,15 @@ export interface BatchResult {
    total: number;
    success_count: number;
    failed_count: number;
+}
+
+// Progress update event from backend
+export interface ProgressUpdate {
+   current: number;
+   total: number;
+   success_count: number;
+   failed_count: number;
+   current_file?: string;
 }
 
 // Tracked file in the UI

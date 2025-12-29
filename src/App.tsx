@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { TitleBar } from '@/components/TitleBar';
 import { DropZone } from '@/components/DropZone';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { ProgressPanel } from '@/components/ProgressPanel';
-import { TrackedFile, OutputFormat, OperationMode, BatchResult } from '@/types';
+import { TrackedFile, OutputFormat, OperationMode, ResizeMode, BatchResult, ProgressUpdate } from '@/types';
 import './App.css';
 import { config } from './config';
 
@@ -18,6 +19,8 @@ function App() {
    const [outputDir, setOutputDir] = useState('');
    const [overwrite, setOverwrite] = useState(true);
    const [quality, setQuality] = useState(75); // Default 75% for WebP, will be 90% for PNG
+   const [resizeMode, setResizeMode] = useState<ResizeMode>('percentage');
+   const [resizePercentage, setResizePercentage] = useState(75); // Default 75%
    const [maxWidth, setMaxWidth] = useState(0); // 0 means no resize
    const [maxHeight, setMaxHeight] = useState(0); // 0 means no resize
    const [keepAspectRatio, setKeepAspectRatio] = useState(true);
@@ -70,6 +73,19 @@ function App() {
    const [processedFiles, setProcessedFiles] = useState(0);
    const [successCount, setSuccessCount] = useState(0);
    const [failedCount, setFailedCount] = useState(0);
+
+   // Listen to progress events from Rust backend
+   useEffect(() => {
+      const unlisten = listen<ProgressUpdate>('progress-update', (event) => {
+         setProcessedFiles(event.payload.current);
+         setSuccessCount(event.payload.success_count);
+         setFailedCount(event.payload.failed_count);
+      });
+
+      return () => {
+         unlisten.then((fn) => fn());
+      };
+   }, []);
 
    const handleFilesAdded = useCallback(
       (newFiles: TrackedFile[]) => {
@@ -146,13 +162,24 @@ function App() {
                   (outputFormat === 'webp' || outputFormat === 'png' || outputFormat === 'jpeg')
                      ? quality
                      : undefined,
+               resize_mode:
+                  operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all'
+                     ? resizeMode
+                     : undefined,
+               resize_percentage:
+                  (operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
+                  resizeMode === 'percentage'
+                     ? resizePercentage
+                     : undefined,
                max_width:
                   (operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
+                  resizeMode === 'dimensions' &&
                   maxWidth > 0
                      ? maxWidth
                      : undefined,
                max_height:
                   (operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
+                  resizeMode === 'dimensions' &&
                   maxHeight > 0
                      ? maxHeight
                      : undefined,
@@ -263,6 +290,10 @@ function App() {
                      onOverwriteChange={setOverwrite}
                      quality={quality}
                      onQualityChange={setQuality}
+                     resizeMode={resizeMode}
+                     onResizeModeChange={setResizeMode}
+                     resizePercentage={resizePercentage}
+                     onResizePercentageChange={setResizePercentage}
                      maxWidth={maxWidth}
                      onMaxWidthChange={handleMaxWidthChange}
                      maxHeight={maxHeight}

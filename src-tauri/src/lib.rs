@@ -2,6 +2,7 @@ use image::{DynamicImage, ImageFormat, GenericImageView};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::fs;
+use tauri::Emitter;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OperationMode {
@@ -15,6 +16,14 @@ pub enum OperationMode {
     OptimizeResize, // Optimize + Resize
     #[serde(rename = "all")]
     All, // Do all: Convert + Optimize + Resize
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ResizeMode {
+    #[serde(rename = "dimensions")]
+    Dimensions, // Resize by specific dimensions
+    #[serde(rename = "percentage")]
+    Percentage, // Resize by percentage
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,8 +87,10 @@ pub struct OptimizeBatchRequest {
     pub overwrite: bool,
     pub operation_mode: OperationMode, // Operation mode
     pub quality: Option<f32>, // 0.0 - 100.0, default 75 for WebP, 80 for JPEG
-    pub max_width: Option<u32>, // Optional resize width
-    pub max_height: Option<u32>, // Optional resize height
+    pub resize_mode: Option<ResizeMode>, // Resize mode: dimensions or percentage
+    pub resize_percentage: Option<f32>, // 1.0 - 100.0, percentage to resize
+    pub max_width: Option<u32>, // Optional resize width (when resize_mode = dimensions)
+    pub max_height: Option<u32>, // Optional resize height (when resize_mode = dimensions)
     pub keep_aspect_ratio: Option<bool>, // Keep aspect ratio when resizing, default true
 }
 
@@ -121,6 +132,8 @@ fn convert_image(
     overwrite: bool,
     operation_mode: &OperationMode,
     quality: Option<f32>,
+    resize_mode: Option<&ResizeMode>,
+    resize_percentage: Option<f32>,
     max_width: Option<u32>,
     max_height: Option<u32>,
     keep_aspect_ratio: bool,
@@ -143,15 +156,33 @@ fn convert_image(
     );
     
     if should_resize {
-        if let (Some(max_w), Some(max_h)) = (max_width, max_height) {
-            let (width, height) = img.dimensions();
-            if width > max_w || height > max_h {
-                if keep_aspect_ratio {
-                    // Resize with aspect ratio (fit within bounds)
-                    img = img.resize(max_w, max_h, image::imageops::FilterType::Lanczos3);
-                } else {
-                    // Resize exact (may distort image)
-                    img = img.resize_exact(max_w, max_h, image::imageops::FilterType::Lanczos3);
+        match resize_mode {
+            Some(ResizeMode::Percentage) => {
+                // Resize by percentage
+                if let Some(percentage) = resize_percentage {
+                    let percentage_decimal = (percentage.clamp(1.0, 100.0)) / 100.0;
+                    let (width, height) = img.dimensions();
+                    let new_width = ((width as f32) * percentage_decimal) as u32;
+                    let new_height = ((height as f32) * percentage_decimal) as u32;
+                    
+                    if new_width > 0 && new_height > 0 {
+                        img = img.resize_exact(new_width, new_height, image::imageops::FilterType::Lanczos3);
+                    }
+                }
+            }
+            Some(ResizeMode::Dimensions) | None => {
+                // Resize by dimensions (original behavior)
+                if let (Some(max_w), Some(max_h)) = (max_width, max_height) {
+                    let (width, height) = img.dimensions();
+                    if width > max_w || height > max_h {
+                        if keep_aspect_ratio {
+                            // Resize with aspect ratio (fit within bounds)
+                            img = img.resize(max_w, max_h, image::imageops::FilterType::Lanczos3);
+                        } else {
+                            // Resize exact (may distort image)
+                            img = img.resize_exact(max_w, max_h, image::imageops::FilterType::Lanczos3);
+                        }
+                    }
                 }
             }
         }
@@ -407,14 +438,33 @@ fn save_jpeg_with_quality(img: &DynamicImage, output_path: &Path, quality: u8) -
     Ok(())
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProgressUpdate {
+    pub current: usize,
+    pub total: usize,
+    pub success_count: usize,
+    pub failed_count: usize,
+    pub current_file: Option<String>,
+}
+
 #[tauri::command]
-fn optimize_batch(request: OptimizeBatchRequest) -> BatchResult {
+fn optimize_batch(request: OptimizeBatchRequest, app: tauri::AppHandle) -> BatchResult {
     let mut results = Vec::new();
     let mut success_count = 0;
     let mut failed_count = 0;
+    let total = request.paths.len();
 
-    for path_str in &request.paths {
+    for (index, path_str) in request.paths.iter().enumerate() {
         let input_path = Path::new(path_str);
+        
+        // Emit progress event before processing
+        let _ = app.emit("progress-update", ProgressUpdate {
+            current: index,
+            total,
+            success_count,
+            failed_count,
+            current_file: Some(path_str.clone()),
+        });
         
         // If overwrite is true and output_dir is empty, use the input file's directory
         let output_dir = if request.overwrite && request.output_dir.is_empty() {
@@ -430,6 +480,8 @@ fn optimize_batch(request: OptimizeBatchRequest) -> BatchResult {
             request.overwrite,
             &request.operation_mode,
             request.quality,
+            request.resize_mode.as_ref(),
+            request.resize_percentage,
             request.max_width,
             request.max_height,
             request.keep_aspect_ratio.unwrap_or(true),
@@ -459,6 +511,15 @@ fn optimize_batch(request: OptimizeBatchRequest) -> BatchResult {
                 failed_count += 1;
             }
         }
+        
+        // Emit progress event after processing
+        let _ = app.emit("progress-update", ProgressUpdate {
+            current: index + 1,
+            total,
+            success_count,
+            failed_count,
+            current_file: None,
+        });
     }
 
     BatchResult {
