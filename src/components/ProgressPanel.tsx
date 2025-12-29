@@ -1,5 +1,6 @@
 import { openPath } from '@tauri-apps/plugin-opener';
 import { Play, Square, FolderOpen, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ export function ProgressPanel({
    onCancel,
    canStart,
 }: ProgressPanelProps) {
+   const { t } = useTranslation();
    const progress = totalFiles > 0 ? (processedFiles / totalFiles) * 100 : 0;
    const isDone = !isProcessing && processedFiles > 0 && processedFiles === totalFiles;
 
@@ -46,7 +48,11 @@ export function ProgressPanel({
          <div className='space-y-1'>
             <div className='flex justify-between text-xs'>
                <span className='text-muted-foreground'>
-                  {isProcessing ? 'Processing...' : isDone ? 'Completed' : 'Ready'}
+                  {isProcessing
+                     ? t('progress.status.processing')
+                     : isDone
+                     ? t('progress.status.completed')
+                     : t('progress.status.ready')}
                </span>
                <span className='text-foreground font-medium'>{Math.round(progress)}%</span>
             </div>
@@ -56,7 +62,7 @@ export function ProgressPanel({
             />
             {totalFiles > 0 && (
                <p className='text-[10px] text-muted-foreground'>
-                  {processedFiles} / {totalFiles} files
+                  {t('progress.filesProcessed', { processed: processedFiles, total: totalFiles })}
                </p>
             )}
          </div>
@@ -66,12 +72,12 @@ export function ProgressPanel({
             <div className='flex gap-3 text-xs'>
                <div className='flex items-center gap-1.5 text-emerald-600'>
                   <CheckCircle2 className='w-3.5 h-3.5' />
-                  <span className='font-medium'>{successCount} success</span>
+                  <span className='font-medium'>{t('progress.successCount', { count: successCount })}</span>
                </div>
                {failedCount > 0 && (
                   <div className='flex items-center gap-1.5 text-red-600'>
                      <XCircle className='w-3.5 h-3.5' />
-                     <span className='font-medium'>{failedCount} failed</span>
+                     <span className='font-medium'>{t('progress.failedCount', { count: failedCount })}</span>
                   </div>
                )}
             </div>
@@ -88,7 +94,7 @@ export function ProgressPanel({
                {isProcessing ? (
                   <>
                      <Loader2 className='w-3.5 h-3.5 mr-1.5 animate-spin' />
-                     Processing...
+                     {t('progress.processing')}
                   </>
                ) : (
                   <>
@@ -96,7 +102,7 @@ export function ProgressPanel({
                         className='w-3.5 h-3.5 mr-1.5'
                         fill='currentColor'
                      />
-                     Convert
+                     {t('progress.convert')}
                   </>
                )}
             </Button>

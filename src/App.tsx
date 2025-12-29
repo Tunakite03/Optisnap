@@ -1,24 +1,36 @@
 import { useState, useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { useTranslation } from 'react-i18next';
 import { TitleBar } from '@/components/TitleBar';
 import { DropZone } from '@/components/DropZone';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { ProgressPanel } from '@/components/ProgressPanel';
-import { TrackedFile, OutputFormat, OperationMode, ResizeMode, BatchResult, ProgressUpdate } from '@/types';
+
+import { ResizablePanel } from '@/components/ResizablePanel';
+import {
+   TrackedFile,
+   OutputFormat,
+   OperationMode,
+   ResizeMode,
+   BatchResult,
+   ProgressUpdate,
+} from '@/types';
 import './App.css';
 import { config } from './config';
 
 function App() {
+   const { t } = useTranslation();
    // File state
    const [files, setFiles] = useState<TrackedFile[]>([]);
 
    // Settings state
-   const [operationMode, setOperationMode] = useState<OperationMode>('optimize');
+   const [operationMode, setOperationMode] =
+      useState<OperationMode>('optimize');
    const [outputFormat, setOutputFormat] = useState<OutputFormat>('webp');
    const [outputDir, setOutputDir] = useState('');
    const [overwrite, setOverwrite] = useState(true);
-   const [quality, setQuality] = useState(75); // Default 75% for WebP, will be 90% for PNG
+   const [quality, setQuality] = useState(90); // Default 75% for WebP, will be 90% for PNG
    const [resizeMode, setResizeMode] = useState<ResizeMode>('percentage');
    const [resizePercentage, setResizePercentage] = useState(75); // Default 75%
    const [maxWidth, setMaxWidth] = useState(0); // 0 means no resize
@@ -32,8 +44,12 @@ function App() {
          // Find the original aspect ratio from files
          const filesWithDims = files.filter((f) => f.width && f.height);
          if (filesWithDims.length > 0) {
-            const maxOriginalWidth = Math.max(...filesWithDims.map((f) => f.width!));
-            const maxOriginalHeight = Math.max(...filesWithDims.map((f) => f.height!));
+            const maxOriginalWidth = Math.max(
+               ...filesWithDims.map((f) => f.width!),
+            );
+            const maxOriginalHeight = Math.max(
+               ...filesWithDims.map((f) => f.height!),
+            );
             const aspectRatio = maxOriginalWidth / maxOriginalHeight;
             setMaxHeight(Math.round(width / aspectRatio));
          }
@@ -47,8 +63,12 @@ function App() {
          // Find the original aspect ratio from files
          const filesWithDims = files.filter((f) => f.width && f.height);
          if (filesWithDims.length > 0) {
-            const maxOriginalWidth = Math.max(...filesWithDims.map((f) => f.width!));
-            const maxOriginalHeight = Math.max(...filesWithDims.map((f) => f.height!));
+            const maxOriginalWidth = Math.max(
+               ...filesWithDims.map((f) => f.width!),
+            );
+            const maxOriginalHeight = Math.max(
+               ...filesWithDims.map((f) => f.height!),
+            );
             const aspectRatio = maxOriginalWidth / maxOriginalHeight;
             setMaxWidth(Math.round(height * aspectRatio));
          }
@@ -92,7 +112,10 @@ function App() {
          // Set output directory to the directory of the first file if not already set
          if (files.length === 0 && newFiles.length > 0 && !outputDir) {
             const firstFilePath = newFiles[0].path;
-            const lastSlashIndex = Math.max(firstFilePath.lastIndexOf('/'), firstFilePath.lastIndexOf('\\'));
+            const lastSlashIndex = Math.max(
+               firstFilePath.lastIndexOf('/'),
+               firstFilePath.lastIndexOf('\\'),
+            );
             if (lastSlashIndex !== -1) {
                const directory = firstFilePath.substring(0, lastSlashIndex);
                setOutputDir(directory);
@@ -101,12 +124,16 @@ function App() {
 
          setFiles((prev) => {
             const existingPaths = new Set(prev.map((f) => f.path));
-            const uniqueNewFiles = newFiles.filter((f) => !existingPaths.has(f.path));
+            const uniqueNewFiles = newFiles.filter(
+               (f) => !existingPaths.has(f.path),
+            );
             const allFiles = [...prev, ...uniqueNewFiles];
 
             // If first time adding files, find max dimensions
             if (prev.length === 0 && uniqueNewFiles.length > 0) {
-               const filesWithDims = uniqueNewFiles.filter((f) => f.width && f.height);
+               const filesWithDims = uniqueNewFiles.filter(
+                  (f) => f.width && f.height,
+               );
                if (filesWithDims.length > 0) {
                   const maxW = Math.max(...filesWithDims.map((f) => f.width!));
                   const maxH = Math.max(...filesWithDims.map((f) => f.height!));
@@ -118,7 +145,7 @@ function App() {
             return allFiles;
          });
       },
-      [files.length, outputDir]
+      [files.length, outputDir],
    );
 
    const handleFileRemove = useCallback((id: string) => {
@@ -142,14 +169,20 @@ function App() {
       setFailedCount(0);
 
       // Mark all files as pending
-      setFiles((prev) => prev.map((f) => ({ ...f, status: 'pending' as const, error: undefined })));
+      setFiles((prev) =>
+         prev.map((f) => ({
+            ...f,
+            status: 'pending' as const,
+            error: undefined,
+         })),
+      );
 
       try {
          // If overwrite is true, use original file directory
          // Otherwise use the specified output directory
          const effectiveOutputDir = overwrite ? '' : outputDir;
 
-         // Call Rust backend
+         // Call Rust backend (backup will be created automatically if overwrite is true)
          const result = await invoke<BatchResult>('optimize_batch', {
             request: {
                paths: files.map((f) => f.path),
@@ -158,32 +191,45 @@ function App() {
                overwrite,
                operation_mode: operationMode,
                quality:
-                  (operationMode === 'optimize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
-                  (outputFormat === 'webp' || outputFormat === 'png' || outputFormat === 'jpeg')
+                  (operationMode === 'optimize' ||
+                     operationMode === 'optimize_resize' ||
+                     operationMode === 'all') &&
+                  (outputFormat === 'webp' ||
+                     outputFormat === 'png' ||
+                     outputFormat === 'jpeg')
                      ? quality
                      : undefined,
                resize_mode:
-                  operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all'
+                  operationMode === 'resize' ||
+                  operationMode === 'optimize_resize' ||
+                  operationMode === 'all'
                      ? resizeMode
                      : undefined,
                resize_percentage:
-                  (operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
+                  (operationMode === 'resize' ||
+                     operationMode === 'optimize_resize' ||
+                     operationMode === 'all') &&
                   resizeMode === 'percentage'
                      ? resizePercentage
                      : undefined,
                max_width:
-                  (operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
+                  (operationMode === 'resize' ||
+                     operationMode === 'optimize_resize' ||
+                     operationMode === 'all') &&
                   resizeMode === 'dimensions' &&
                   maxWidth > 0
                      ? maxWidth
                      : undefined,
                max_height:
-                  (operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all') &&
+                  (operationMode === 'resize' ||
+                     operationMode === 'optimize_resize' ||
+                     operationMode === 'all') &&
                   resizeMode === 'dimensions' &&
                   maxHeight > 0
                      ? maxHeight
                      : undefined,
                keep_aspect_ratio: keepAspectRatio,
+               create_backup: overwrite, // Only create backup when overwriting files
             },
          });
 
@@ -203,12 +249,15 @@ function App() {
                   };
                }
                return f;
-            })
+            }),
          );
 
          setProcessedFiles(result.total);
          setSuccessCount(result.success_count);
          setFailedCount(result.failed_count);
+
+         // Add to history
+         // No history tracking
       } catch (error) {
          console.error('Batch optimization failed:', error);
          // Mark all files as failed
@@ -217,7 +266,7 @@ function App() {
                ...f,
                status: 'failed' as const,
                error: String(error),
-            }))
+            })),
          );
          setProcessedFiles(files.length);
          setFailedCount(files.length);
@@ -239,93 +288,105 @@ function App() {
       files.some((f) => f.status === 'pending' || f.status === 'failed');
 
    return (
-      <div className='h-screen flex flex-col bg-background overflow-hidden'>
+      <div className="h-screen flex flex-col bg-background overflow-hidden">
          {/* Custom Title Bar */}
          <TitleBar />
 
          {/* Main Content */}
-         <main className='flex-1 flex overflow-hidden'>
-            {/* Left Panel - File List */}
-            <div className='flex-1 flex flex-col border-r border-border min-w-0'>
-               {/* Toolbar */}
-               <div className='h-9 px-3 flex items-center gap-2 border-b border-border bg-muted/30 shrink-0'>
-                  <span className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
-                     Source Files
-                  </span>
-                  {files.length > 0 && <span className='text-xs text-muted-foreground'>({files.length} items)</span>}
+         <main className="flex-1 flex overflow-hidden">
+            <ResizablePanel
+               minLeftWidth={300}
+               minRightWidth={250}
+               defaultRightWidth={288}
+            >
+               {/* Left Panel - File List */}
+               <div className="flex-1 flex flex-col border-r border-border min-w-0">
+                  {/* Toolbar */}
+                  <div className="h-9 px-3 flex items-center gap-2 border-b border-border bg-muted/30 shrink-0">
+                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {t('app.sourceFiles')}
+                     </span>
+                     {files.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                           ({files.length} {t('app.items')})
+                        </span>
+                     )}
+                  </div>
+
+                  {/* Drop Zone & File List */}
+                  <div className="flex-1 overflow-hidden">
+                     <DropZone
+                        files={files}
+                        onFilesAdded={handleFilesAdded}
+                        onFileRemove={handleFileRemove}
+                        onClearAll={handleClearAll}
+                        operationMode={operationMode}
+                        disabled={isProcessing}
+                     />
+                  </div>
                </div>
 
-               {/* Drop Zone & File List */}
-               <div className='flex-1 overflow-hidden'>
-                  <DropZone
-                     files={files}
-                     onFilesAdded={handleFilesAdded}
-                     onFileRemove={handleFileRemove}
-                     onClearAll={handleClearAll}
-                     operationMode={operationMode}
-                     disabled={isProcessing}
-                  />
-               </div>
-            </div>
+               {/* Right Panel - Settings & Actions */}
+               <div className="flex flex-col h-full">
+                  {/* Settings Toolbar */}
+                  <div className="h-9 px-3 flex items-center border-b border-border bg-muted/30 shrink-0">
+                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {t('app.outputSettings')}
+                     </span>
+                  </div>
 
-            {/* Right Panel - Settings & Actions */}
-            <div className='w-72 flex flex-col shrink-0 bg-muted/20'>
-               {/* Settings Toolbar */}
-               <div className='h-9 px-3 flex items-center border-b border-border bg-muted/30 shrink-0'>
-                  <span className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
-                     Output Settings
-                  </span>
-               </div>
+                  {/* Settings Content - Scrollable */}
+                  <div className="flex-1 overlay-scrollbar-container">
+                     <div className="overlay-scrollbar">
+                        <SettingsPanel
+                           operationMode={operationMode}
+                           onOperationModeChange={setOperationMode}
+                           outputFormat={outputFormat}
+                           onFormatChange={handleFormatChange}
+                           outputDir={outputDir}
+                           onOutputDirChange={setOutputDir}
+                           overwrite={overwrite}
+                           onOverwriteChange={setOverwrite}
+                           quality={quality}
+                           onQualityChange={setQuality}
+                           resizeMode={resizeMode}
+                           onResizeModeChange={setResizeMode}
+                           resizePercentage={resizePercentage}
+                           onResizePercentageChange={setResizePercentage}
+                           maxWidth={maxWidth}
+                           onMaxWidthChange={handleMaxWidthChange}
+                           maxHeight={maxHeight}
+                           onMaxHeightChange={handleMaxHeightChange}
+                           keepAspectRatio={keepAspectRatio}
+                           onKeepAspectRatioChange={setKeepAspectRatio}
+                           files={files}
+                           disabled={isProcessing}
+                        />
+                     </div>
+                  </div>
 
-               {/* Settings Content */}
-               <div className='flex-1 overflow-y-auto'>
-                  <SettingsPanel
-                     operationMode={operationMode}
-                     onOperationModeChange={setOperationMode}
-                     outputFormat={outputFormat}
-                     onFormatChange={handleFormatChange}
-                     outputDir={outputDir}
-                     onOutputDirChange={setOutputDir}
-                     overwrite={overwrite}
-                     onOverwriteChange={setOverwrite}
-                     quality={quality}
-                     onQualityChange={setQuality}
-                     resizeMode={resizeMode}
-                     onResizeModeChange={setResizeMode}
-                     resizePercentage={resizePercentage}
-                     onResizePercentageChange={setResizePercentage}
-                     maxWidth={maxWidth}
-                     onMaxWidthChange={handleMaxWidthChange}
-                     maxHeight={maxHeight}
-                     onMaxHeightChange={handleMaxHeightChange}
-                     keepAspectRatio={keepAspectRatio}
-                     onKeepAspectRatioChange={setKeepAspectRatio}
-                     files={files}
-                     disabled={isProcessing}
-                  />
+                  {/* Progress & Actions */}
+                  <div className="border-t border-border">
+                     <ProgressPanel
+                        isProcessing={isProcessing}
+                        totalFiles={files.length}
+                        processedFiles={processedFiles}
+                        successCount={successCount}
+                        failedCount={failedCount}
+                        outputDir={outputDir}
+                        onStart={handleStart}
+                        onCancel={handleCancel}
+                        canStart={canStart}
+                     />
+                  </div>
                </div>
-
-               {/* Progress & Actions */}
-               <div className='border-t border-border'>
-                  <ProgressPanel
-                     isProcessing={isProcessing}
-                     totalFiles={files.length}
-                     processedFiles={processedFiles}
-                     successCount={successCount}
-                     failedCount={failedCount}
-                     outputDir={outputDir}
-                     onStart={handleStart}
-                     onCancel={handleCancel}
-                     canStart={canStart}
-                  />
-               </div>
-            </div>
+            </ResizablePanel>
          </main>
 
          {/* Status Bar */}
-         <div className='h-6 px-3 flex items-center justify-between border-t border-border bg-muted/50 text-xs text-muted-foreground shrink-0'>
+         <div className="h-6 px-3 flex items-center justify-between border-t border-border bg-muted/50 text-xs text-muted-foreground shrink-0">
             <span>Version: {config.version}</span>
-            <span className='flex items-center font-semibold gradient-text'>
+            <span className="flex items-center font-semibold gradient-text">
                {config.appName} by {config.author}
             </span>
          </div>

@@ -19,9 +19,14 @@
 }
 
 /* Custom scrollbar - thin and subtle */
+* {
+   scrollbar-width: thin;
+   scrollbar-color: oklch(0.7 0.01 270 / 0.5) transparent;
+}
+
 ::-webkit-scrollbar {
-   width: 8px;
-   height: 8px;
+   width: 6px;
+   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -29,12 +34,48 @@
 }
 
 ::-webkit-scrollbar-thumb {
-   background: oklch(0.7 0.01 270);
-   border-radius: 4px;
+   background: oklch(0.7 0.01 270 / 0.3);
+   border-radius: 3px;
+   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-   background: oklch(0.6 0.01 270);
+   background: oklch(0.6 0.01 270 / 0.6);
+}
+
+/* Overlay scrollbar - doesn't take up layout space */
+.overlay-scrollbar-container {
+   position: relative;
+   overflow: hidden;
+}
+
+.overlay-scrollbar {
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   overflow-y: auto;
+   padding-right: 0;
+}
+
+/* Hide scrollbar space by using negative margin */
+.overlay-scrollbar::-webkit-scrollbar {
+   width: 6px;
+}
+
+.overlay-scrollbar::-webkit-scrollbar-track {
+   background: transparent;
+   margin-right: -6px;
+}
+
+.overlay-scrollbar::-webkit-scrollbar-thumb {
+   background: oklch(0.7 0.01 270 / 0.4);
+   border-radius: 3px;
+}
+
+.overlay-scrollbar::-webkit-scrollbar-thumb:hover {
+   background: oklch(0.6 0.01 270 / 0.7);
 }
 
 /* Remove outline on focused elements for cleaner look */
@@ -51,7 +92,15 @@
 
 /* Animated gradient text */
 .gradient-text {
-   background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+   background: linear-gradient(
+      90deg,
+      #ff6b6b,
+      #feca57,
+      #48dbfb,
+      #ff9ff3,
+      #54a0ff,
+      #ff6b6b
+   );
    background-size: 200% auto;
    background-clip: text;
    -webkit-background-clip: text;

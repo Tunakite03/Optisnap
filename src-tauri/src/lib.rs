@@ -92,6 +92,13 @@ pub struct OptimizeBatchRequest {
     pub max_width: Option<u32>, // Optional resize width (when resize_mode = dimensions)
     pub max_height: Option<u32>, // Optional resize height (when resize_mode = dimensions)
     pub keep_aspect_ratio: Option<bool>, // Keep aspect ratio when resizing, default true
+    pub create_backup: Option<bool>, // Create backup before overwriting, default true when overwrite is true
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupInfo {
+    pub original_path: String,
+    pub backup_path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,6 +122,7 @@ pub struct FileResult {
     pub output_width: Option<u32>,
     pub output_height: Option<u32>,
     pub error: Option<String>,
+    pub backup_info: Option<BackupInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,6 +131,7 @@ pub struct BatchResult {
     pub total: usize,
     pub success_count: usize,
     pub failed_count: usize,
+    pub backups: Vec<BackupInfo>,
 }
 
 fn convert_image(
@@ -209,6 +218,13 @@ fn convert_image(
         format!("{}_{}.{}", stem, suffix, output_format.extension())
     };
     let output_path = output_dir.join(&output_filename);
+
+    eprintln!("=== CONVERT IMAGE ===");
+    eprintln!("Input: {}", input_path.display());
+    eprintln!("Output: {}", output_path.display());
+    eprintln!("Overwrite: {}", overwrite);
+    eprintln!("Output dir: {}", output_dir.display());
+    eprintln!("Output filename: {}", output_filename);
 
     // Ensure output directory exists
     fs::create_dir_all(output_dir)
@@ -454,6 +470,12 @@ fn optimize_batch(request: OptimizeBatchRequest, app: tauri::AppHandle) -> Batch
     let mut failed_count = 0;
     let total = request.paths.len();
 
+    eprintln!("=== OPTIMIZE BATCH START ===");
+    eprintln!("Total files: {}", total);
+    eprintln!("Overwrite: {}", request.overwrite);
+    eprintln!("Create backup: {:?}", request.create_backup);
+    eprintln!("Output dir: {}", request.output_dir);
+
     for (index, path_str) in request.paths.iter().enumerate() {
         let input_path = Path::new(path_str);
         
@@ -465,6 +487,8 @@ fn optimize_batch(request: OptimizeBatchRequest, app: tauri::AppHandle) -> Batch
             failed_count,
             current_file: Some(path_str.clone()),
         });
+        
+        // No backup needed
         
         // If overwrite is true and output_dir is empty, use the input file's directory
         let output_dir = if request.overwrite && request.output_dir.is_empty() {
@@ -495,6 +519,7 @@ fn optimize_batch(request: OptimizeBatchRequest, app: tauri::AppHandle) -> Batch
                     output_width: Some(output_width),
                     output_height: Some(output_height),
                     error: None,
+                    backup_info: None,
                 });
                 success_count += 1;
             }
@@ -507,6 +532,7 @@ fn optimize_batch(request: OptimizeBatchRequest, app: tauri::AppHandle) -> Batch
                     output_width: None,
                     output_height: None,
                     error: Some(e),
+                    backup_info: None,
                 });
                 failed_count += 1;
             }
@@ -527,6 +553,7 @@ fn optimize_batch(request: OptimizeBatchRequest, app: tauri::AppHandle) -> Batch
         results,
         success_count,
         failed_count,
+        backups: Vec::new(),
     }
 }
 
@@ -555,13 +582,150 @@ fn get_supported_formats() -> Vec<String> {
     ]
 }
 
+#[tauri::command]
+fn scan_folder_for_images(folder_path: String) -> Result<Vec<String>, String> {
+    use std::fs;
+    
+    let supported_extensions = ["png", "jpg", "jpeg", "webp", "tiff", "tif", "qoi", "bmp"];
+    let mut image_paths = Vec::new();
+    
+    fn scan_directory(dir: &Path, extensions: &[&str], paths: &mut Vec<String>) -> Result<(), String> {
+        if !dir.is_dir() {
+            return Err("Path is not a directory".to_string());
+        }
+        
+        let entries = fs::read_dir(dir)
+            .map_err(|e| format!("Failed to read directory: {}", e))?;
+        
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+            let path = entry.path();
+            
+            if path.is_file() {
+                if let Some(ext) = path.extension() {
+                    if let Some(ext_str) = ext.to_str() {
+                        if extensions.contains(&ext_str.to_lowercase().as_str()) {
+                            if let Some(path_str) = path.to_str() {
+                                paths.push(path_str.to_string());
+                            }
+                        }
+                    }
+                }
+            } else if path.is_dir() {
+                // Recursive scan
+                scan_directory(&path, extensions, paths)?;
+            }
+        }
+        
+        Ok(())
+    }
+    
+    let folder = Path::new(&folder_path);
+    scan_directory(folder, &supported_extensions, &mut image_paths)?;
+    
+    Ok(image_paths)
+}
+
+#[tauri::command]
+fn create_backup(file_path: String) -> Result<BackupInfo, String> {
+    let original = Path::new(&file_path);
+    
+    eprintln!("=== CREATE BACKUP START ===");
+    eprintln!("Original file path: {}", file_path);
+    eprintln!("File exists: {}", original.exists());
+    
+    if !original.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+    
+    // Create backup in a .optisnap_backups folder in the same directory
+    let parent = original.parent().ok_or("Cannot get parent directory")?;
+    let backup_dir = parent.join(".optisnap_backups");
+    
+    eprintln!("Backup directory: {}", backup_dir.display());
+    
+    fs::create_dir_all(&backup_dir)
+        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+    
+    eprintln!("Backup directory created successfully");
+    
+    // Create unique backup filename with timestamp
+    let filename = original.file_name().ok_or("Invalid filename")?;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("Failed to get timestamp: {}", e))?
+        .as_secs();
+    
+    let backup_filename = format!("{}_{}", timestamp, filename.to_string_lossy());
+    let backup_path = backup_dir.join(backup_filename);
+    
+    eprintln!("Backup file path: {}", backup_path.display());
+    
+    // Copy file to backup location
+    let bytes_copied = fs::copy(original, &backup_path)
+        .map_err(|e| format!("Failed to create backup: {}", e))?;
+    
+    eprintln!("Backup created successfully: {} bytes copied", bytes_copied);
+    eprintln!("=== CREATE BACKUP END ===");
+    
+    // Verify backup exists
+    if !backup_path.exists() {
+        return Err("Backup file was not created successfully".to_string());
+    }
+    
+    Ok(BackupInfo {
+        original_path: file_path,
+        backup_path: backup_path.to_string_lossy().to_string(),
+    })
+}
+
+#[tauri::command]
+fn restore_from_backup(backup_path: String, restore_path: String) -> Result<String, String> {
+    let backup = Path::new(&backup_path);
+    let restore = Path::new(&restore_path);
+    
+    if !backup.exists() {
+        return Err(format!("Backup does not exist: {}", backup_path));
+    }
+    
+    // Restore the backup to the original location
+    fs::copy(backup, restore)
+        .map_err(|e| format!("Failed to restore backup: {}", e))?;
+    
+    // Optionally delete the backup file after restoration
+    fs::remove_file(backup)
+        .map_err(|e| format!("Failed to remove backup: {}", e))?;
+    
+    Ok(format!("Restored: {}", restore_path))
+}
+
+#[tauri::command]
+fn delete_backup(backup_path: String) -> Result<String, String> {
+    let backup = Path::new(&backup_path);
+    
+    if backup.exists() {
+        fs::remove_file(backup)
+            .map_err(|e| format!("Failed to delete backup: {}", e))?;
+    }
+    
+    Ok(format!("Deleted backup: {}", backup_path))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![optimize_batch, get_supported_formats, get_image_dimensions])
+        .invoke_handler(tauri::generate_handler![
+            optimize_batch,
+            get_supported_formats,
+            get_image_dimensions,
+            scan_folder_for_images,
+            create_backup,
+            restore_from_backup,
+            delete_backup
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

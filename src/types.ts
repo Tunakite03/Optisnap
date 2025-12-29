@@ -2,7 +2,12 @@
 export type OutputFormat = 'png' | 'webp' | 'jpeg' | 'tiff' | 'qoi' | 'bmp';
 
 // Operation modes
-export type OperationMode = 'optimize' | 'resize' | 'convert' | 'optimize_resize' | 'all';
+export type OperationMode =
+   | 'optimize'
+   | 'resize'
+   | 'convert'
+   | 'optimize_resize'
+   | 'all';
 
 // Resize modes
 export type ResizeMode = 'dimensions' | 'percentage';
@@ -25,6 +30,12 @@ export interface OptimizeBatchRequest {
    keep_aspect_ratio?: boolean; // Default true
 }
 
+// Backup information
+export interface BackupInfo {
+   original_path: string;
+   backup_path: string;
+}
+
 // Result of a single file conversion (matches Rust serde output)
 export interface FileResult {
    path: string;
@@ -34,6 +45,7 @@ export interface FileResult {
    output_width: number | null;
    output_height: number | null;
    error: string | null;
+   backup_info: BackupInfo | null;
 }
 
 // Result of the entire batch operation (matches Rust serde output)
@@ -42,6 +54,7 @@ export interface BatchResult {
    total: number;
    success_count: number;
    failed_count: number;
+   backups: BackupInfo[];
 }
 
 // Progress update event from backend
@@ -69,6 +82,28 @@ export interface TrackedFile {
    outputHeight?: number;
 }
 
+// History entry for undo functionality
+export interface HistoryEntry {
+   id: string;
+   timestamp: number;
+   operationMode: OperationMode;
+   outputFormat?: OutputFormat;
+   filesProcessed: number;
+   successCount: number;
+   failedCount: number;
+   totalSizeBefore: number;
+   totalSizeAfter: number;
+   backups: BackupFile[];
+}
+
+// Backup file information
+export interface BackupFile {
+   originalPath: string;
+   backupPath: string;
+   outputPath: string;
+   wasOverwritten: boolean;
+}
+
 // Supported image extensions for filtering
 export const SUPPORTED_EXTENSIONS = [
    '.png',
@@ -93,7 +128,11 @@ export const FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
 ];
 
 // Operation mode display names
-export const OPERATION_MODE_OPTIONS: { value: OperationMode; label: string; description: string }[] = [
+export const OPERATION_MODE_OPTIONS: {
+   value: OperationMode;
+   label: string;
+   description: string;
+}[] = [
    {
       value: 'optimize',
       label: 'Optimize Only',

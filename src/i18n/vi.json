@@ -1,0 +1,145 @@
+{
+   "app": {
+      "title": "OptiSnap - Tối ưu hình ảnh hàng loạt",
+      "sourceFiles": "Tệp nguồn",
+      "items": "mục",
+      "outputSettings": "Cài đặt đầu ra"
+   },
+   "dropzone": {
+      "title": "Kéo Thả Ảnh Vào Đây",
+      "subtitle": "hoặc nhấp để chọn tệp",
+      "supported": "Định dạng hỗ trợ: PNG, JPEG, WebP, TIFF, QOI, BMP",
+      "addFiles": "Thêm Tệp",
+      "addFolder": "Thêm Thư Mục",
+      "addMore": "Thêm tệp khác",
+      "clearAll": "Xóa Tất Cả",
+      "loading": "Đang tải tệp...",
+      "filesOf": "/",
+      "dropHere": "Thả tệp vào đây",
+      "noImages": "Không tìm thấy ảnh trong thư mục đã chọn.",
+      "noImagesTitle": "Không Có Ảnh",
+      "folderError": "Không thể quét thư mục tìm ảnh.",
+      "fileName": "Tên",
+      "dimensions": "Kích thước",
+      "size": "Dung lượng",
+      "status": "Trạng thái"
+   },
+   "settings": {
+      "operationMode": {
+         "label": "Chế độ xử lý",
+         "placeholder": "Chọn chế độ",
+         "optimize": "Chỉ tối ưu",
+         "optimizeDesc": "Nén ảnh không thay đổi kích thước",
+         "resize": "Chỉ đổi kích thước",
+         "resizeDesc": "Thay đổi kích thước không tối ưu",
+         "convert": "Chuyển đổi định dạng",
+         "convertDesc": "Đổi định dạng (WebP, JPEG, PNG)",
+         "optimizeResize": "Tối ưu & Đổi kích thước",
+         "optimizeResizeDesc": "Vừa nén vừa thay đổi kích thước",
+         "all": "Tất cả",
+         "allDesc": "Chuyển đổi, tối ưu và đổi kích thước"
+      },
+      "outputFormat": {
+         "label": "Định dạng",
+         "placeholder": "Chọn định dạng",
+         "description": "Chuyển đổi ảnh sang định dạng khác",
+         "webp": "WebP - Hiện đại",
+         "png": "PNG - Không mất dữ liệu",
+         "jpeg": "JPEG - Tương thích",
+         "tiff": "TIFF - Chất lượng cao",
+         "qoi": "QOI - Nhanh",
+         "bmp": "BMP - Không nén"
+      },
+      "outputDir": {
+         "label": "Thư mục đầu ra",
+         "placeholder": "Chọn thư mục...",
+         "placeholderConvert": "Chọn thư mục đầu ra...",
+         "placeholderOverwrite": "Thư mục gốc (tự động)",
+         "browse": "Duyệt",
+         "overwriteInfo": "Tệp sẽ được ghi đè tại thư mục gốc"
+      },
+      "overwrite": {
+         "label": "Ghi đè tệp gốc",
+         "warning": "Điều này sẽ thay thế ảnh gốc của bạn",
+         "infoEnabled": "Thay thế tệp tại vị trí gốc",
+         "infoDisabled": "Lưu vào thư mục khác với hậu tố"
+      },
+      "quality": {
+         "label": "Chất lượng",
+         "labelWithValue": "Chất lượng: {{quality}}%",
+         "labelWithPng": "Chất lượng: {{quality}}% (PngQuant)",
+         "description": "Cao hơn = chất lượng tốt hơn, dung lượng lớn hơn",
+         "descriptionPng": "Chất lượng cao hơn = nhiều màu hơn (khuyến nghị: 85-95)",
+         "descriptionJpeg": "Chất lượng cao hơn = nén ít hơn (khuyến nghị: 80-90)",
+         "descriptionWebp": "Chất lượng thấp hơn = dung lượng nhỏ hơn"
+      },
+      "resizeMode": {
+         "label": "Chế độ đổi kích thước",
+         "placeholder": "Chọn chế độ đổi kích thước",
+         "percentage": "Theo phần trăm",
+         "percentageDesc": "Đổi kích thước theo % của ảnh gốc",
+         "dimensions": "Kích thước tùy chỉnh",
+         "dimensionsDesc": "Đặt chiều rộng/cao cụ thể"
+      },
+      "resizePercentage": {
+         "label": "Đổi kích thước về: {{percentage}}%",
+         "description": "Ảnh sẽ được đổi kích thước về {{percentage}}% so với kích thước gốc"
+      },
+      "maxDimensions": {
+         "label": "Kích thước mục tiêu",
+         "useMax": "Dùng tối đa: {{width}} × {{height}}",
+         "width": "Rộng tối đa",
+         "height": "Cao tối đa",
+         "original": "Gốc",
+         "keepAspectRatio": "Giữ tỷ lệ khung hình",
+         "warningMultiple": "Ảnh lớn hơn sẽ được thu nhỏ. Ảnh nhỏ hơn giữ nguyên kích thước gốc. !!!",
+         "warningSingle": "Kích thước tối đa. Ảnh sẽ được thu nhỏ nếu lớn hơn."
+      },
+      "keepAspectRatio": {
+         "label": "Giữ tỷ lệ khung hình"
+      }
+   },
+   "progress": {
+      "status": {
+         "processing": "Đang xử lý...",
+         "completed": "Hoàn thành",
+         "ready": "Sẵn sàng"
+      },
+      "filesProcessed": "{{processed}} / {{total}} tệp",
+      "success": "Thành công",
+      "successCount": "{{count}} thành công",
+      "failed": "Thất bại",
+      "failedCount": "{{count}} thất bại",
+      "start": "Bắt đầu xử lý",
+      "convert": "Chuyển đổi",
+      "processing": "Đang xử lý...",
+      "stop": "Dừng"
+   },
+   "fileStatus": {
+      "pending": "Chờ xử lý",
+      "processing": "Đang chuyển đổi...",
+      "success": "Hoàn tất",
+      "failed": "Thất bại",
+      "reduction": "đã lưu"
+   },
+   "history": {
+      "title": "Lịch Sử",
+      "empty": "Chưa có lịch sử xử lý",
+      "undo": "Hoàn Tác",
+      "restore": "Khôi Phục",
+      "clear": "Xóa Lịch Sử",
+      "batch": "Lô",
+      "files": "tệp",
+      "saved": "đã lưu",
+      "ago": "trước"
+   },
+   "common": {
+      "close": "Đóng",
+      "cancel": "Hủy",
+      "confirm": "Xác Nhận",
+      "save": "Lưu",
+      "delete": "Xóa",
+      "remove": "Gỡ Bỏ",
+      "error": "Lỗi"
+   }
+}

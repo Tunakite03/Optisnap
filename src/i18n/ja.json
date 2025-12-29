@@ -1,0 +1,145 @@
+{
+   "app": {
+      "title": "OptiSnap - 一括画像最適化",
+      "sourceFiles": "ソースファイル",
+      "items": "項目",
+      "outputSettings": "出力設定"
+   },
+   "dropzone": {
+      "title": "ここに画像をドロップ",
+      "subtitle": "またはクリックして参照",
+      "supported": "サポート形式：PNG、JPEG、WebP、TIFF、QOI、BMP",
+      "addFiles": "ファイルを追加",
+      "addFolder": "フォルダを追加",
+      "addMore": "さらにファイルを追加",
+      "clearAll": "すべてクリア",
+      "loading": "ファイルを読み込み中...",
+      "filesOf": "/",
+      "dropHere": "ここにファイルをドロップ",
+      "noImages": "選択したフォルダに画像が見つかりません。",
+      "noImagesTitle": "画像なし",
+      "folderError": "フォルダをスキャンして画像を見つけることができませんでした。",
+      "fileName": "名前",
+      "dimensions": "寸法",
+      "size": "サイズ",
+      "status": "状態"
+   },
+   "settings": {
+      "operationMode": {
+         "label": "操作モード",
+         "placeholder": "操作を選択",
+         "optimize": "最適化のみ",
+         "optimizeDesc": "リサイズせずに画像を圧縮",
+         "resize": "リサイズのみ",
+         "resizeDesc": "最適化せずにリサイズ",
+         "convert": "形式変換",
+         "convertDesc": "画像形式を変更（WebP、JPEG、PNG）",
+         "optimizeResize": "最適化とリサイズ",
+         "optimizeResizeDesc": "圧縮とリサイズの両方",
+         "all": "すべての操作",
+         "allDesc": "変換、最適化、リサイズ"
+      },
+      "outputFormat": {
+         "label": "形式",
+         "placeholder": "形式を選択",
+         "description": "画像を別の形式に変換",
+         "webp": "WebP - モダン形式",
+         "png": "PNG - ロスレス",
+         "jpeg": "JPEG - 互換性",
+         "tiff": "TIFF - 高品質",
+         "qoi": "QOI - 高速",
+         "bmp": "BMP - 非圧縮"
+      },
+      "outputDir": {
+         "label": "出力フォルダ",
+         "placeholder": "フォルダを選択...",
+         "placeholderConvert": "出力フォルダを選択...",
+         "placeholderOverwrite": "元のフォルダ（自動）",
+         "browse": "参照",
+         "overwriteInfo": "元のフォルダでファイルが上書きされます"
+      },
+      "overwrite": {
+         "label": "元のファイルを上書き",
+         "warning": "これにより元の画像が置き換えられます",
+         "infoEnabled": "元の場所でファイルを置き換え",
+         "infoDisabled": "接尾辞を付けて別のフォルダに保存"
+      },
+      "quality": {
+         "label": "品質",
+         "labelWithValue": "品質：{{quality}}%",
+         "labelWithPng": "品質：{{quality}}%（PngQuant）",
+         "description": "高い = 品質が良い、ファイルが大きい",
+         "descriptionPng": "品質が高い = 色が多い（推奨：85-95）",
+         "descriptionJpeg": "品質が高い = 圧縮が少ない（推奨：80-90）",
+         "descriptionWebp": "品質が低い = ファイルが小さい"
+      },
+      "resizeMode": {
+         "label": "リサイズモード",
+         "placeholder": "リサイズモードを選択",
+         "percentage": "パーセンテージで",
+         "percentageDesc": "元のサイズの%にリサイズ",
+         "dimensions": "カスタム寸法",
+         "dimensionsDesc": "特定の幅/高さを設定"
+      },
+      "resizePercentage": {
+         "label": "リサイズ：{{percentage}}%",
+         "description": "画像は元の寸法の{{percentage}}%にリサイズされます"
+      },
+      "maxDimensions": {
+         "label": "ターゲット寸法",
+         "useMax": "最大を使用：{{width}} × {{height}}",
+         "width": "最大幅",
+         "height": "最大高さ",
+         "original": "元",
+         "keepAspectRatio": "アスペクト比を維持",
+         "warningMultiple": "ターゲットより大きい画像は縮小されます。小さい画像は元のサイズを保持します。！！！",
+         "warningSingle": "最大寸法。大きい場合は画像がリサイズされます。"
+      },
+      "keepAspectRatio": {
+         "label": "アスペクト比を維持"
+      }
+   },
+   "progress": {
+      "status": {
+         "processing": "処理中...",
+         "completed": "完了",
+         "ready": "準備完了"
+      },
+      "filesProcessed": "{{processed}} / {{total}} ファイル",
+      "success": "成功",
+      "successCount": "{{count}} 成功",
+      "failed": "失敗",
+      "failedCount": "{{count}} 失敗",
+      "start": "処理を開始",
+      "convert": "変換",
+      "processing": "処理中...",
+      "stop": "停止"
+   },
+   "fileStatus": {
+      "pending": "保留中",
+      "processing": "変換中...",
+      "success": "完了",
+      "failed": "失敗",
+      "reduction": "保存済み"
+   },
+   "history": {
+      "title": "履歴",
+      "empty": "処理履歴がありません",
+      "undo": "元に戻す",
+      "restore": "復元",
+      "clear": "履歴をクリア",
+      "batch": "バッチ",
+      "files": "ファイル",
+      "saved": "保存済み",
+      "ago": "前"
+   },
+   "common": {
+      "close": "閉じる",
+      "cancel": "キャンセル",
+      "confirm": "確認",
+      "save": "保存",
+      "delete": "削除",
+      "remove": "削除",
+      "error": "エラー"
+   }
+}

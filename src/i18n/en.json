@@ -1,0 +1,146 @@
+{
+   "app": {
+      "title": "OptiSnap - Bulk Image Optimizer",
+      "sourceFiles": "Source Files",
+      "items": "items",
+      "outputSettings": "Output Settings"
+   },
+   "dropzone": {
+      "title": "Drop Your Images Here",
+      "subtitle": "or click to browse",
+      "supported": "Supported formats: PNG, JPEG, WebP, TIFF, QOI, BMP",
+      "addFiles": "Add Files",
+      "addFolder": "Add Folder",
+      "addMore": "Add more files",
+      "clearAll": "Clear All",
+      "loading": "Loading files...",
+      "filesOf": "of",
+      "dropHere": "Drop files here",
+      "noImages": "No images found in the selected folder.",
+      "noImagesTitle": "No Images",
+      "folderError": "Failed to scan folder for images.",
+      "fileName": "Name",
+      "dimensions": "Dimensions",
+      "size": "Size",
+      "status": "Status"
+   },
+   "settings": {
+      "operationMode": {
+         "label": "Operation Mode",
+         "placeholder": "Select operation",
+         "optimize": "Optimize Only",
+         "optimizeDesc": "Compress images without resizing",
+         "resize": "Resize Only",
+         "resizeDesc": "Resize images without optimization",
+         "convert": "Convert Only",
+         "convertDesc": "Change image format (WebP, JPEG, PNG)",
+         "optimizeResize": "Optimize & Resize",
+         "optimizeResizeDesc": "Both compress and resize images",
+         "all": "All Operations",
+         "allDesc": "Convert, optimize, and resize together"
+      },
+      "outputFormat": {
+         "label": "Format",
+         "placeholder": "Select format",
+         "description": "Convert images to a different format",
+         "webp": "WebP - Modern format",
+         "png": "PNG - Lossless",
+         "jpeg": "JPEG - Compatible",
+         "tiff": "TIFF - High quality",
+         "qoi": "QOI - Fast",
+         "bmp": "BMP - Uncompressed"
+      },
+      "outputDir": {
+         "label": "Output folder",
+         "placeholder": "Select folder...",
+         "placeholderConvert": "Select output folder...",
+         "placeholderOverwrite": "Original folder (auto)",
+         "browse": "Browse",
+         "overwriteInfo": "Files will be overwritten in their original folders"
+      },
+      "overwrite": {
+         "label": "Overwrite original files",
+         "warning": "This will replace your original images",
+         "infoEnabled": "Replace files in their original location",
+         "infoDisabled": "Save to a different folder with suffix"
+      },
+      "quality": {
+         "label": "Quality",
+         "labelWithValue": "Quality: {{quality}}%",
+         "labelWithPng": "Quality: {{quality}}% (PngQuant)",
+         "description": "Higher = better quality, larger file",
+         "descriptionPng": "Higher quality = more colors (recommended: 85-95)",
+         "descriptionJpeg": "Higher quality = less compression (recommended: 80-90)",
+         "descriptionWebp": "Lower quality = smaller file size"
+      },
+      "resizeMode": {
+         "label": "Resize Mode",
+         "placeholder": "Select resize mode",
+         "percentage": "By Percentage",
+         "percentageDesc": "Resize to % of original size",
+         "dimensions": "Custom Dimensions",
+         "dimensionsDesc": "Set specific width/height"
+      },
+      "resizePercentage": {
+         "label": "Resize to: {{percentage}}%",
+         "description": "Images will be resized to {{percentage}}% of their original dimensions"
+      },
+      "maxDimensions": {
+         "label": "Target Dimensions",
+         "useMax": "Use max: {{width}} × {{height}}",
+         "width": "Max width",
+         "height": "Max height",
+         "original": "Original",
+         "keepAspectRatio": "Keep aspect ratio",
+         "warningMultiple": "Images larger than target will be resized down. Smaller images keep original size. !!!",
+         "warningSingle": "Maximum dimensions. Image will be resized if larger."
+      },
+      "keepAspectRatio": {
+         "label": "Keep aspect ratio"
+      }
+   },
+   "progress": {
+      "title": "Processing",
+      "status": {
+         "processing": "Processing...",
+         "completed": "Completed",
+         "ready": "Ready"
+      },
+      "filesProcessed": "{{processed}} / {{total}} files",
+      "success": "Success",
+      "successCount": "{{count}} success",
+      "failed": "Failed",
+      "failedCount": "{{count}} failed",
+      "start": "Start Processing",
+      "convert": "Convert",
+      "processing": "Processing...",
+      "stop": "Stop"
+   },
+   "fileStatus": {
+      "pending": "Pending",
+      "processing": "Converting...",
+      "success": "Done",
+      "failed": "Failed",
+      "reduction": "saved"
+   },
+   "history": {
+      "title": "History",
+      "empty": "No processing history yet",
+      "undo": "Undo",
+      "restore": "Restore",
+      "clear": "Clear History",
+      "batch": "Batch",
+      "files": "files",
+      "saved": "saved",
+      "ago": "ago"
+   },
+   "common": {
+      "close": "Close",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "save": "Save",
+      "delete": "Delete",
+      "remove": "Remove",
+      "error": "Error"
+   }
+}

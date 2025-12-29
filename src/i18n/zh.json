@@ -1,0 +1,145 @@
+{
+   "app": {
+      "title": "OptiSnap - 批量图像优化器",
+      "sourceFiles": "源文件",
+      "items": "项",
+      "outputSettings": "输出设置"
+   },
+   "dropzone": {
+      "title": "将图像拖放到此处",
+      "subtitle": "或点击浏览",
+      "supported": "支持的格式：PNG、JPEG、WebP、TIFF、QOI、BMP",
+      "addFiles": "添加文件",
+      "addFolder": "添加文件夹",
+      "addMore": "添加更多文件",
+      "clearAll": "清除所有",
+      "loading": "正在加载文件...",
+      "filesOf": "/",
+      "dropHere": "将文件放在这里",
+      "noImages": "在选定的文件夹中找不到图像。",
+      "noImagesTitle": "无图像",
+      "folderError": "无法扫描文件夹以查找图像。",
+      "fileName": "名称",
+      "dimensions": "尺寸",
+      "size": "大小",
+      "status": "状态"
+   },
+   "settings": {
+      "operationMode": {
+         "label": "操作模式",
+         "placeholder": "选择操作",
+         "optimize": "仅优化",
+         "optimizeDesc": "压缩图像但不调整大小",
+         "resize": "仅调整大小",
+         "resizeDesc": "调整大小但不优化",
+         "convert": "转换格式",
+         "convertDesc": "更改图像格式（WebP、JPEG、PNG）",
+         "optimizeResize": "优化并调整大小",
+         "optimizeResizeDesc": "同时压缩和调整大小",
+         "all": "所有操作",
+         "allDesc": "转换、优化和调整大小"
+      },
+      "outputFormat": {
+         "label": "格式",
+         "placeholder": "选择格式",
+         "description": "将图像转换为不同格式",
+         "webp": "WebP - 现代格式",
+         "png": "PNG - 无损",
+         "jpeg": "JPEG - 兼容",
+         "tiff": "TIFF - 高质量",
+         "qoi": "QOI - 快速",
+         "bmp": "BMP - 未压缩"
+      },
+      "outputDir": {
+         "label": "输出文件夹",
+         "placeholder": "选择文件夹...",
+         "placeholderConvert": "选择输出文件夹...",
+         "placeholderOverwrite": "原始文件夹（自动）",
+         "browse": "浏览",
+         "overwriteInfo": "文件将在其原始文件夹中被覆盖"
+      },
+      "overwrite": {
+         "label": "覆盖原始文件",
+         "warning": "这将替换您的原始图像",
+         "infoEnabled": "在其原始位置替换文件",
+         "infoDisabled": "保存到带后缀的不同文件夹"
+      },
+      "quality": {
+         "label": "质量",
+         "labelWithValue": "质量：{{quality}}%",
+         "labelWithPng": "质量：{{quality}}%（PngQuant）",
+         "description": "越高 = 质量越好，文件越大",
+         "descriptionPng": "质量越高 = 颜色越多（推荐：85-95）",
+         "descriptionJpeg": "质量越高 = 压缩越少（推荐：80-90）",
+         "descriptionWebp": "质量越低 = 文件越小"
+      },
+      "resizeMode": {
+         "label": "调整大小模式",
+         "placeholder": "选择调整大小模式",
+         "percentage": "按百分比",
+         "percentageDesc": "调整为原始大小的%",
+         "dimensions": "自定义尺寸",
+         "dimensionsDesc": "设置特定宽度/高度"
+      },
+      "resizePercentage": {
+         "label": "调整大小为：{{percentage}}%",
+         "description": "图像将调整为其原始尺寸的{{percentage}}%"
+      },
+      "maxDimensions": {
+         "label": "目标尺寸",
+         "useMax": "使用最大：{{width}} × {{height}}",
+         "width": "最大宽度",
+         "height": "最大高度",
+         "original": "原始",
+         "keepAspectRatio": "保持宽高比",
+         "warningMultiple": "大于目标的图像将被缩小。较小的图像保持原始大小。！！！",
+         "warningSingle": "最大尺寸。如果较大，图像将被调整大小。"
+      },
+      "keepAspectRatio": {
+         "label": "保持宽高比"
+      }
+   },
+   "progress": {
+      "status": {
+         "processing": "处理中...",
+         "completed": "已完成",
+         "ready": "就绪"
+      },
+      "filesProcessed": "{{processed}} / {{total}} 个文件",
+      "success": "成功",
+      "successCount": "{{count}} 成功",
+      "failed": "失败",
+      "failedCount": "{{count}} 失败",
+      "start": "开始处理",
+      "convert": "转换",
+      "processing": "处理中...",
+      "stop": "停止"
+   },
+   "fileStatus": {
+      "pending": "待处理",
+      "processing": "正在转换...",
+      "success": "完成",
+      "failed": "失败",
+      "reduction": "已保存"
+   },
+   "history": {
+      "title": "历史",
+      "empty": "尚无处理历史",
+      "undo": "撤消",
+      "restore": "恢复",
+      "clear": "清除历史",
+      "batch": "批次",
+      "files": "文件",
+      "saved": "已保存",
+      "ago": "前"
+   },
+   "common": {
+      "close": "关闭",
+      "cancel": "取消",
+      "confirm": "确认",
+      "save": "保存",
+      "delete": "删除",
+      "remove": "移除",
+      "error": "错误"
+   }
+}
