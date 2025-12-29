@@ -76,44 +76,74 @@ export function DropZone({
    disabled = false,
 }: DropZoneProps) {
    const [isDragging, setIsDragging] = useState(false);
+   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
 
    // Process file paths and add to tracked files
    const processFilePaths = useCallback(
       async (paths: string[]) => {
          if (disabled) return;
 
+         setIsLoadingFiles(true);
+         setLoadingProgress({ current: 0, total: paths.length });
+
          const trackedFiles: TrackedFile[] = [];
+         const BATCH_SIZE = 10; // Process files in batches for better performance
 
-         for (const path of paths) {
-            const name = path.split(/[\\/]/).pop() || path;
+         try {
+            for (let i = 0; i < paths.length; i += BATCH_SIZE) {
+               const batch = paths.slice(i, i + BATCH_SIZE);
 
-            if (isValidImageFile(name)) {
-               try {
-                  const fileInfo = await stat(path);
-                  let dimensions = undefined;
-                  try {
-                     dimensions = await invoke<{ width: number; height: number }>('get_image_dimensions', { path });
-                  } catch (e) {
-                     console.error('Failed to get dimensions:', e);
-                  }
+               // Process batch in parallel
+               const batchResults = await Promise.all(
+                  batch.map(async (path): Promise<TrackedFile | null> => {
+                     const name = path.split(/[\\/]/).pop() || path;
 
-                  trackedFiles.push({
-                     id: generateId(),
-                     name,
-                     path,
-                     size: fileInfo.size,
-                     width: dimensions?.width,
-                     height: dimensions?.height,
-                     status: 'pending' as FileStatus,
-                  });
-               } catch (e) {
-                  console.error('Failed to stat file:', path, e);
+                     if (isValidImageFile(name)) {
+                        try {
+                           const fileInfo = await stat(path);
+                           let dimensions = undefined;
+                           try {
+                              dimensions = await invoke<{ width: number; height: number }>('get_image_dimensions', {
+                                 path,
+                              });
+                           } catch (e) {
+                              console.error('Failed to get dimensions:', e);
+                           }
+
+                           return {
+                              id: generateId(),
+                              name,
+                              path,
+                              size: fileInfo.size,
+                              width: dimensions?.width,
+                              height: dimensions?.height,
+                              status: 'pending' as FileStatus,
+                           };
+                        } catch (e) {
+                           console.error('Failed to stat file:', path, e);
+                           return null;
+                        }
+                     }
+                     return null;
+                  })
+               );
+
+               // Add successful files to the tracked list
+               const validFiles = batchResults.filter((f): f is TrackedFile => f !== null);
+               trackedFiles.push(...validFiles);
+
+               // Update progress
+               setLoadingProgress({ current: Math.min(i + BATCH_SIZE, paths.length), total: paths.length });
+
+               // Add files incrementally for better UX
+               if (validFiles.length > 0) {
+                  onFilesAdded(validFiles);
                }
             }
-         }
-
-         if (trackedFiles.length > 0) {
-            onFilesAdded(trackedFiles);
+         } finally {
+            setIsLoadingFiles(false);
+            setLoadingProgress({ current: 0, total: 0 });
          }
       },
       [disabled, onFilesAdded]
@@ -150,11 +180,11 @@ export function DropZone({
       (e: React.DragEvent<HTMLDivElement>) => {
          e.preventDefault();
          e.stopPropagation();
-         if (!disabled) {
+         if (!disabled && !isLoadingFiles) {
             setIsDragging(true);
          }
       },
-      [disabled]
+      [disabled, isLoadingFiles]
    );
 
    const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -164,7 +194,7 @@ export function DropZone({
    }, []);
 
    const handleFileInput = useCallback(async () => {
-      if (disabled) return;
+      if (disabled || isLoadingFiles) return;
 
       const selected = await open({
          multiple: true,
@@ -186,7 +216,37 @@ export function DropZone({
    const showDimensions = operationMode === 'resize' || operationMode === 'optimize_resize' || operationMode === 'all';
 
    return (
-      <div className='h-full flex flex-col'>
+      <div className='h-full flex flex-col relative'>
+         {/* Loading Indicator Overlay */}
+         {isLoadingFiles && (
+            <div className='absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm'>
+               <div className='bg-card border border-border rounded-lg shadow-lg p-6 min-w-75'>
+                  <div className='flex items-center gap-3 mb-4'>
+                     <Loader2 className='w-5 h-5 text-primary animate-spin' />
+                     <span className='text-sm font-medium'>Loading files...</span>
+                  </div>
+                  <div className='space-y-2'>
+                     <div className='flex justify-between text-xs text-muted-foreground'>
+                        <span>Processing</span>
+                        <span>
+                           {loadingProgress.current} / {loadingProgress.total}
+                        </span>
+                     </div>
+                     <div className='w-full bg-muted rounded-full h-2 overflow-hidden'>
+                        <div
+                           className='h-full bg-primary transition-all duration-300 ease-out'
+                           style={{
+                              width: `${
+                                 loadingProgress.total > 0 ? (loadingProgress.current / loadingProgress.total) * 100 : 0
+                              }%`,
+                           }}
+                        />
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
          {/* Drop Zone Area - Compact */}
          {files.length === 0 ? (
             <div
@@ -197,7 +257,7 @@ export function DropZone({
                className={cn(
                   'flex-1 flex flex-col items-center justify-center cursor-pointer border-2 border-dashed m-3 rounded transition-colors',
                   isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
-                  disabled && 'opacity-50 cursor-not-allowed'
+                  (disabled || isLoadingFiles) && 'opacity-50 cursor-not-allowed'
                )}
             >
                <Upload className={cn('w-10 h-10 mb-3', isDragging ? 'text-primary' : 'text-muted-foreground')} />
@@ -217,7 +277,7 @@ export function DropZone({
                   className={cn(
                      'h-14 mx-3 mt-3 flex items-center justify-center cursor-pointer border border-dashed rounded transition-colors shrink-0',
                      isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
-                     disabled && 'opacity-50 cursor-not-allowed'
+                     (disabled || isLoadingFiles) && 'opacity-50 cursor-not-allowed'
                   )}
                >
                   <Upload className='w-4 h-4 mr-2 text-muted-foreground' />
@@ -238,7 +298,7 @@ export function DropZone({
                         variant='ghost'
                         size='sm'
                         onClick={onClearAll}
-                        disabled={disabled}
+                        disabled={disabled || isLoadingFiles}
                         className='h-6 px-2 text-xs text-muted-foreground hover:text-destructive'
                      >
                         <Trash2 className='w-3 h-3' />
@@ -299,7 +359,7 @@ export function DropZone({
                         <div className='w-16 flex items-center justify-center shrink-0'>
                            <button
                               onClick={() => onFileRemove(file.id)}
-                              disabled={disabled || file.status === 'processing'}
+                              disabled={disabled || isLoadingFiles || file.status === 'processing'}
                               className='opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-opacity disabled:opacity-0'
                            >
                               <X className='w-3.5 h-3.5' />
